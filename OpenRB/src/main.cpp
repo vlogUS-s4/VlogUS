@@ -45,7 +45,9 @@
 #endif
  
 // TODO: À changer selon l'ID de votre moteur :
-const uint8_t DXL_ID = 101;
+// const uint8_t DXL_ID = 101;  // Moteur XM430
+// const uint8_t DXL_ID = 1;  // Moteur XL430 avec le bout qui sort
+const uint8_t DXL_ID = 6;  // Moteur XL430 avec le bout flat
 
 const float DXL_PROTOCOL_VERSION = 2.0;
 
