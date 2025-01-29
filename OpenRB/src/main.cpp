@@ -27,8 +27,7 @@ void setup() {
   DEBUG_SERIAL.println("Starting position control ...");
   
   // Use UART port of DYNAMIXEL Shield to debug.
-  DEBUG_SERIAL.begin(115200);
-  while(!DEBUG_SERIAL); // On attend que la communication série pour les messages soit prête.
+  Serial.begin(9600);  // Port USB (débogage)  while(!DEBUG_SERIAL); // On attend que la communication série pour les messages soit prête.
   deltabot.setup();
   deltabot.detectDXL();
 
@@ -37,14 +36,36 @@ void setup() {
 
 void loop() {
   double positions[] = {175.0, 175.0, 175.0};
-  deltabot.setPositions(positions);
-  // put your main code here, to run repeatedly:
-  delay(1000);
-  positions[0] = 230.0;
-  positions[1] = 230.0;
-  positions[2] = 230.0;
-  deltabot.setPositions(positions);
+  // deltabot.setPositions(positions);
+  // // put your main code here, to run repeatedly:
+  // delay(1000);
+  // positions[0] = 230.0;
+  // positions[1] = 230.0;
+  // positions[2] = 230.0;
+  // deltabot.setPositions(positions);
 
-  delay(1000);
+  // delay(1000);
+
+
+    if (Serial.available() > 0) {
+        double angle1 = Serial.parseFloat();
+        double angle2 = Serial.parseFloat();
+        double angle3 = Serial.parseFloat();
+        //int angle1 = Serial.parseFloat();
+ 
+        Serial.print("Reçu : ");
+        Serial.print(angle1);
+        Serial.print(", ");
+        Serial.print(angle2);
+        Serial.print(", ");
+        Serial.println(angle3);
+
+        positions[0] = angle1;
+        positions[1] = angle2;
+        positions[2] = angle3;
+
+        deltabot.setPositions(positions);
+
+    }
 
 }

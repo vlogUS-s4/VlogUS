@@ -74,22 +74,22 @@ void Delta::readSerial() {
     int count = 0;  // Nombre de valeurs lues
     unsigned long startTime = millis();  // Temps de départ
 
-    while (count < 3) {  // Lire jusqu'à 3 valeurs
-        if (Serial.available() >= sizeof(double)) {  // Attente de 8 octets
-            double valeur;
-            Serial.readBytes((char*)&valeur, sizeof(double));  // Lecture binaire
-            Serial.print("Valeur reçue : ");
-            Serial.println(valeur, 6);
-            pos[count] = valeur;
-            count++;  // Incrémenter le compteur
+    // while (count < 3) {  // Lire jusqu'à 3 valeurs
+    //     if (Serial.available() >= sizeof(double)) {  // Attente de 8 octets
+    //         double valeur;
+    //         Serial.readBytes((char*)&valeur, sizeof(double));  // Lecture binaire
+    //         Serial.print("Valeur reçue : ");
+    //         Serial.println(valeur, 6);
+    //         pos[count] = valeur;
+    //         count++;  // Incrémenter le compteur
 
-        }
-        // Sortir si le temps d'attente dépasse 5 secondes
-        if (millis() - startTime > 5000) {
-            Serial.println("Timeout: pas assez de valeurs reçues.");
-            break;
-        }
-    }
+    //     }
+    //     // Sortir si le temps d'attente dépasse 5 secondes
+    //     if (millis() - startTime > 5000) {
+    //         Serial.println("Timeout: pas assez de valeurs reçues.");
+    //         break;
+    //     }
+    // }
 }
 
 
