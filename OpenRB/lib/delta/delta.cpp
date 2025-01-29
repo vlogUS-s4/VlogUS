@@ -50,6 +50,12 @@ void Delta::setPositions(double position[])
 
     for (i = 0; i < 3; i++)
     {
+        if (position[i] < 75) {
+            position[i] = 75;
+        }
+        if (position[i] > 290) {
+            position[i] = 290;
+        }
         dxl.setGoalPosition(servoIDs[i], position[i], UNIT_DEGREE);
         f_present_position = 0.0;
 
