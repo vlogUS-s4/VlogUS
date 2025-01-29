@@ -48,11 +48,22 @@ void Delta::setPositions()
 }
 void Delta::setPositions(double position[])
 {
+    float f_present_position = 0.0;
+
     for (int i = 0; i < 3; i++)
     {
         dxl.setGoalPosition(servoIDs[i], position[i], UNIT_DEGREE);
+        f_present_position = 0.0;
+
+        while (abs(position[i] - f_present_position) > 2.0)
+        {
+            f_present_position = dxl.getPresentPosition(servoIDs[i], UNIT_DEGREE);
+            DEBUG_SERIAL.print("Present_Position(degree) : ");
+            DEBUG_SERIAL.print(f_present_position);
+            DEBUG_SERIAL.print(" : ");
+            DEBUG_SERIAL.println(position[i]);
+        }
     }
-    delay(1000);
 }
 
 void Delta::readSerial() {
