@@ -38,6 +38,7 @@ void setup() {
 void loop() {
   double positions[] = {10.0, 10.0, 10.0};
   deltabot.setPositions(positions);
+  Serial.println("position");
   // put your main code here, to run repeatedly:
   delay(10000);
   positions[0] = 20.0;

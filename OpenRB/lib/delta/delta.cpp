@@ -34,7 +34,7 @@ void Delta::configureDXL(uint8_t dxl1, uint8_t dxl2, uint8_t dxl3)
         dxl.torqueOn(servoIDs[i]);
         
         // Limit the maximum velocity in Position Control Mode. Use 0 for Max speed
-        dxl.writeControlTableItem(PROFILE_VELOCITY, servoIDs[i], 0);
+        dxl.writeControlTableItem(PROFILE_VELOCITY, servoIDs[i], 10);
     }
 }
 
