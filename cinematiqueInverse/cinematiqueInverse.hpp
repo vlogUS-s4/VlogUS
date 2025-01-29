@@ -3,56 +3,60 @@
 
 #include <cmath>
 #include <array>
+#include <stdio.h>
 
 using namespace std;
 
 struct angles
 {
-    float theta1;
-    float theta2;
-    float theta3;
+    double theta1;
+    double theta2;
+    double theta3;
 };
 
 struct coordonnees
 {
-    float x;
-    float y;
-    float z;
+    double x;
+    double y;
+    double z;
 };
 
 struct parametres
 {
-    float longAvantBras;
-    float longBicep;
-    float rayonBase;
-    float rayonEffecteur;
+    double longAvantBras;
+    double longBicep;
+    double rayonBase;
+    double rayonEffecteur;
 };
 
-array<float, 2> calculAngle(coordonnees position, parametres longueurs);
+array<double, 2> calculAngle(coordonnees position, parametres longueurs);
 angles cinematiqueInverse(coordonnees position, parametres longueurs);
 
-array<float, 2> calculAngle(coordonnees position, parametres longueurs){
+array<double, 2> calculAngle(coordonnees position, parametres longueurs){
 
     //result: [angle, singularity] (0: no singularity, 1: singularity)
-    array<float, 2> result = {0, 0};
+    array<double, 2> result = {0, 0};
 
     position.y = position.y - longueurs.rayonEffecteur;
 
-    float z_offset = ((pow(position.x, 2)) + (pow(position.y, 2)) + (pow(position.z, 2)) + (pow(longueurs.longBicep, 2)) - (pow(longueurs.longAvantBras, 2)) + (pow(longueurs.rayonBase, 2)))/(2*position.z);
-    float z_slope = (-longueurs.rayonBase - position.y)/(position.z);
+    double z_offset = ((pow(position.x, 2)) + (pow(position.y, 2)) + (pow(position.z, 2)) + (pow(longueurs.longBicep, 2)) - (pow(longueurs.longAvantBras, 2)) + (pow(longueurs.rayonBase, 2)))/(2*position.z);
+    double z_slope = (-longueurs.rayonBase - position.y)/(position.z);
 
-    float reachable = -(pow((z_offset + z_slope*(-longueurs.rayonBase)), 2)) + longueurs.longBicep*(pow(z_slope, 2)*longueurs.longBicep + longueurs.longBicep);
+    double reachable = -(pow((z_offset + z_slope*(-longueurs.rayonBase)), 2)) + longueurs.longBicep*(pow(z_slope, 2)*longueurs.longBicep + longueurs.longBicep);
 
     if (reachable < 0) {
         result[1] = 1;
     } 
     else {
-        float coordy = (-longueurs.rayonBase - z_offset*z_slope - sqrt(reachable))/(pow(z_slope, 2) + 1);
-        float coordz = z_offset + z_slope*coordy;
+        double coordy = (-longueurs.rayonBase - z_offset*z_slope - sqrt(reachable))/(pow(z_slope, 2) + 1);
+        double coordz = z_offset + z_slope*coordy;
         result[0] = 180 * atan(-coordz/(-longueurs.rayonBase - coordy))/M_PI;
 
-        if (coordy > -longueurs.rayonBase){
-            result[0] = result[0] + 180;
+        // if (coordy > -longueurs.rayonBase){
+        //     result[0] = result[0] + 180;
+        // }
+        if(result[0] < 0){
+            result[0] += 360;
         }
     }
 
@@ -62,10 +66,12 @@ array<float, 2> calculAngle(coordonnees position, parametres longueurs){
 
 angles cinematiqueInverse(coordonnees position, parametres longueurs){
     
+    printf("Position: %f, %f, %f\n", position.x, position.y, position.z);
+
     angles result;
-    array<float, 2> theta1 = {0, 0};
-    array<float, 2> theta2 = {0, 0};
-    array<float, 2> theta3 = {0, 0};
+    array<double, 2> theta1 = {0, 0};
+    array<double, 2> theta2 = {0, 0};
+    array<double, 2> theta3 = {0, 0};
 
     theta1 = calculAngle(position, longueurs);
 
@@ -90,14 +96,16 @@ angles cinematiqueInverse(coordonnees position, parametres longueurs){
     }
 
     if (theta3[1] == 0){
+        printf("No singularity\n");
         result.theta1 = theta1[0];
         result.theta2 = theta2[0];
         result.theta3 = theta3[0];
     }
     else{
-        result.theta1 = 0;
-        result.theta2 = 0;
-        result.theta3 = 0;
+        printf("Singularity\n");
+        result.theta1 = 180;
+        result.theta2 = 180;
+        result.theta3 = 180;
     }
 
     return result;
