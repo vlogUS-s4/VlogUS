@@ -7,18 +7,16 @@ using namespace ControlTableItem;
 
 const float DXL_PROTOCOL_VERSION = 2.0;
 
+#define SPEED 50 // Valeur/255       0 = valeur maximale
+
 Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 
-void Delta::configureDXL(uint8_t dxl1, uint8_t dxl2, uint8_t dxl3)
+void Delta::configureDXL(uint8_t dxlID)
 {
-    servoIDs[0] = dxl1;
-    servoIDs[1] = dxl2;
-    servoIDs[2] = dxl3;
 
 
     // Get DYNAMIXEL information
-    for (int i = 0; i < 3; i++) {
-        bool ping = dxl.ping(servoIDs[i]);
+        bool ping = dxl.ping(dxlID);
         if (!ping)
         {
             DEBUG_SERIAL.println("Could not ping motor!");
@@ -29,13 +27,12 @@ void Delta::configureDXL(uint8_t dxl1, uint8_t dxl2, uint8_t dxl3)
         }
    
         // Turn off torque when configuring items in EEPROM area
-        dxl.torqueOff(servoIDs[i]);
-        dxl.setOperatingMode(servoIDs[i], OP_POSITION);
-        dxl.torqueOn(servoIDs[i]);
+        dxl.torqueOff(dxlID);
+        dxl.setOperatingMode(dxlID, OP_POSITION);
+        dxl.torqueOn(dxlID);
         
         // Limit the maximum velocity in Position Control Mode. Use 0 for Max speed
-        dxl.writeControlTableItem(PROFILE_VELOCITY, servoIDs[i], 10);
-    }
+        dxl.writeControlTableItem(PROFILE_VELOCITY, dxlID, SPEED);
 }
 
 void Delta::setPositions()
@@ -49,21 +46,28 @@ void Delta::setPositions()
 void Delta::setPositions(double position[])
 {
     float f_present_position = 0.0;
+    int i;
 
-    for (int i = 0; i < 3; i++)
+    for (i = 0; i < 3; i++)
     {
         dxl.setGoalPosition(servoIDs[i], position[i], UNIT_DEGREE);
         f_present_position = 0.0;
 
-        while (abs(position[i] - f_present_position) > 2.0)
-        {
-            f_present_position = dxl.getPresentPosition(servoIDs[i], UNIT_DEGREE);
-            DEBUG_SERIAL.print("Present_Position(degree) : ");
-            DEBUG_SERIAL.print(f_present_position);
-            DEBUG_SERIAL.print(" : ");
-            DEBUG_SERIAL.println(position[i]);
-        }
+
     }
+    i = 0;
+    while (i < 3) {
+
+        f_present_position = dxl.getPresentPosition(servoIDs[i], UNIT_DEGREE);
+
+        if (abs(position[i] - f_present_position) < 8.0) {
+            i++;
+            Serial.println("Objectif atteint");
+
+        }
+            
+    }
+
 }
 
 void Delta::readSerial() {
@@ -121,6 +125,7 @@ void Delta::detectDXL() {
             DEBUG_SERIAL.println(id);
             servoIDs[i] = id;
             i++;
+            configureDXL(id);
         }
     }
 }

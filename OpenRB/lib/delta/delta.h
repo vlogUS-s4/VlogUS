@@ -47,7 +47,7 @@
 class Delta {
 public:
 
-    void configureDXL(uint8_t dxl1, uint8_t dxl2, uint8_t dxl3);
+    void configureDXL(uint8_t dxlID);
     void setup();
     void readSerial();
     void setPositions(double position[]);
