@@ -50,14 +50,16 @@ array<double, 2> calculAngle(coordonnees position, parametres longueurs){
     else {
         double coordy = (-longueurs.rayonBase - z_offset*z_slope - sqrt(reachable))/(pow(z_slope, 2) + 1);
         double coordz = z_offset + z_slope*coordy;
-        result[0] = 180 * atan(-coordz/(-longueurs.rayonBase - coordy))/M_PI;
+        //result[0] = 180 * atan(-coordz/(-longueurs.rayonBase - coordy))/M_PI;
+        result[0] = atan2(-coordz, -longueurs.rayonBase - coordy) * 180 / M_PI;
+        result[0] = 180 - result[0];
 
         // if (coordy > -longueurs.rayonBase){
         //     result[0] = result[0] + 180;
         // }
-        if(result[0] < 0){
-            result[0] += 360;
-        }
+        // if(result[0] < 0){
+        //     result[0] += 360;
+        // }
     }
 
     return result;
@@ -103,9 +105,9 @@ angles cinematiqueInverse(coordonnees position, parametres longueurs){
     }
     else{
         printf("Singularity\n");
-        result.theta1 = 180;
-        result.theta2 = 180;
-        result.theta3 = 180;
+        result.theta1 = 225;
+        result.theta2 = 225;
+        result.theta3 = 225;
     }
 
     return result;

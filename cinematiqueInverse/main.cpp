@@ -27,7 +27,7 @@ int main(){
     tcsetattr(serial_fd, TCSANOW, &options);
     
     //Coordonnees de la position voulue
-    coordonnees position = {0, 0, 0.215};
+    coordonnees position = {0.05, 0.0, 0.14};
 
     //selon le 3D (en m)
     parametres longueurs = {0.21, 0.093, 0.089, 0.045};
