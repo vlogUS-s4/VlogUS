@@ -29,8 +29,21 @@ struct parametres
     double rayonEffecteur;
 };
 
+struct limitesMoteurs
+{
+    double moteur_max;
+    double moteur_min;
+};
+
+struct retour
+{
+    angles angle;
+    bool reachable;
+};
+
 array<double, 2> calculAngle(coordonnees position, parametres longueurs);
-angles cinematiqueInverse(coordonnees position, parametres longueurs);
+retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites);
+bool validerAngles(angles angle, limitesMoteurs limites);
 
 array<double, 2> calculAngle(coordonnees position, parametres longueurs){
 
@@ -50,30 +63,39 @@ array<double, 2> calculAngle(coordonnees position, parametres longueurs){
     else {
         double coordy = (-longueurs.rayonBase - z_offset*z_slope - sqrt(reachable))/(pow(z_slope, 2) + 1);
         double coordz = z_offset + z_slope*coordy;
-        //result[0] = 180 * atan(-coordz/(-longueurs.rayonBase - coordy))/M_PI;
         result[0] = atan2(-coordz, -longueurs.rayonBase - coordy) * 180 / M_PI;
         result[0] = 180 - result[0];
-
-        // if (coordy > -longueurs.rayonBase){
-        //     result[0] = result[0] + 180;
-        // }
-        // if(result[0] < 0){
-        //     result[0] += 360;
-        // }
     }
 
     return result;
 
 }
 
-angles cinematiqueInverse(coordonnees position, parametres longueurs){
+bool validerAngles(angles angle, limitesMoteurs limites){
+
+    bool result = 0;
+
+    if(angle.theta1 > limites.moteur_max || angle.theta1 < limites.moteur_min ||
+       angle.theta2 > limites.moteur_max || angle.theta2 < limites.moteur_min ||
+       angle.theta3 > limites.moteur_max || angle.theta3 < limites.moteur_min){
+
+        printf("Mecaniquement pas possible\n");
+
+        result = 1;
+
+       }
+
+    return result;
+}
+
+retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites){
     
     printf("Position: %f, %f, %f\n", position.x, position.y, position.z);
 
-    angles result;
     array<double, 2> theta1 = {0, 0};
     array<double, 2> theta2 = {0, 0};
     array<double, 2> theta3 = {0, 0};
+    retour valeurRetour;
 
     theta1 = calculAngle(position, longueurs);
 
@@ -97,20 +119,21 @@ angles cinematiqueInverse(coordonnees position, parametres longueurs){
         theta3 = calculAngle(position3, longueurs);
     }
 
+    valeurRetour.angle.theta1 = theta1[0];
+    valeurRetour.angle.theta2 = theta2[0];
+    valeurRetour.angle.theta3 = theta3[0];
+
     if (theta3[1] == 0){
         printf("No singularity\n");
-        result.theta1 = theta1[0];
-        result.theta2 = theta2[0];
-        result.theta3 = theta3[0];
-    }
-    else{
-        printf("Singularity\n");
-        result.theta1 = 225;
-        result.theta2 = 225;
-        result.theta3 = 225;
+        valeurRetour.reachable = validerAngles(valeurRetour.angle, limites);
     }
 
-    return result;
+    else{
+        printf("Singularity\n");
+        valeurRetour.reachable = 1;
+    }
+
+    return valeurRetour;
 }
 
 #endif
