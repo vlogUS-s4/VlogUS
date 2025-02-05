@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 from threading import Thread, Lock
+import time
+import datetime
+
 
 
 class VideoStream:
@@ -65,6 +68,7 @@ def display_rtsp_stream_with_face_tracking(rtsp_url):
     detected_faces = []
 
     while True:
+        start_time = time.time()
         frame = video_stream.read()
         if frame is None:
             continue
@@ -95,6 +99,8 @@ def display_rtsp_stream_with_face_tracking(rtsp_url):
 
         # Show frame
         cv2.imshow("RTSP Stream with Face Tracking", frame)
+        end_time = time.time()
+        print(f"Decoding latency: {end_time - start_time:.3f} sec")
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -104,5 +110,6 @@ def display_rtsp_stream_with_face_tracking(rtsp_url):
 
 
 # Replace with your RTSP stream URL
-rtsp_url = "rtsp://192.168.137.144:8554/live"
-display_rtsp_stream_with_face_tracking(rtsp_url)
+rtsp_url = "rtsp://192.168.137.182:8554/live"
+http_url = "http://192.168.137.182/live"
+display_rtsp_stream_with_face_tracking(http_url)
