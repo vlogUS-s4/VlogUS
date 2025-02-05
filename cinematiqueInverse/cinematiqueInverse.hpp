@@ -88,52 +88,92 @@ bool validerAngles(angles angle, limitesMoteurs limites){
     return result;
 }
 
-retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites){
+retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites, double angleCamera) {
+    printf("Position initiale: %f, %f, %f\n", position.x, position.y, position.z);
     
-    printf("Position: %f, %f, %f\n", position.x, position.y, position.z);
-
-    array<double, 2> theta1 = {0, 0};
+    // Appliquer la rotation du référentiel mobile
+    coordonnees positionTransformee;
+    positionTransformee.x = position.x * cos(angleCamera) - position.y * sin(angleCamera);
+    positionTransformee.y = position.x * sin(angleCamera) + position.y * cos(angleCamera);
+    positionTransformee.z = position.z;
+    
+    printf("Position transformee: %f, %f, %f\n", positionTransformee.x, positionTransformee.y, positionTransformee.z);
+    
+    array<double, 2> theta1 = calculAngle(positionTransformee, longueurs);
     array<double, 2> theta2 = {0, 0};
     array<double, 2> theta3 = {0, 0};
     retour valeurRetour;
 
-    theta1 = calculAngle(position, longueurs);
-
-    if (theta1[1] == 0){
-        
+    if (theta1[1] == 0) {
         coordonnees position2;
-        position2.x = position.x*cos(120*M_PI/180) + position.y*sin(120*M_PI/180);
-        position2.y = position.y*cos(120*M_PI/180) - position.x*sin(120*M_PI/180);
-        position2.z = position.z;
-
+        position2.x = positionTransformee.x * cos(120 * M_PI / 180) + positionTransformee.y * sin(120 * M_PI / 180);
+        position2.y = positionTransformee.y * cos(120 * M_PI / 180) - positionTransformee.x * sin(120 * M_PI / 180);
+        position2.z = positionTransformee.z;
         theta2 = calculAngle(position2, longueurs);
     }
 
-    if (theta2[1] == 0){
-
+    if (theta2[1] == 0) {
         coordonnees position3;
-        position3.x = position.x*cos(120*M_PI/180) - position.y*sin(120*M_PI/180);
-        position3.y = position.y*cos(120*M_PI/180) + position.x*sin(120*M_PI/180);
-        position3.z = position.z;
-
+        position3.x = positionTransformee.x * cos(120 * M_PI / 180) - positionTransformee.y * sin(120 * M_PI / 180);
+        position3.y = positionTransformee.y * cos(120 * M_PI / 180) + positionTransformee.x * sin(120 * M_PI / 180);
+        position3.z = positionTransformee.z;
         theta3 = calculAngle(position3, longueurs);
     }
 
     valeurRetour.angle.theta1 = theta1[0];
     valeurRetour.angle.theta2 = theta2[0];
     valeurRetour.angle.theta3 = theta3[0];
-
-    if (theta3[1] == 0){
-        printf("No singularity\n");
-        valeurRetour.reachable = validerAngles(valeurRetour.angle, limites);
-    }
-
-    else{
-        printf("Singularity\n");
-        valeurRetour.reachable = 1;
-    }
+    valeurRetour.reachable = (theta3[1] == 0) ? validerAngles(valeurRetour.angle, limites) : 1;
 
     return valeurRetour;
 }
+
+// retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites){
+    
+//     printf("Position: %f, %f, %f\n", position.x, position.y, position.z);
+
+//     array<double, 2> theta1 = {0, 0};
+//     array<double, 2> theta2 = {0, 0};
+//     array<double, 2> theta3 = {0, 0};
+//     retour valeurRetour;
+
+//     theta1 = calculAngle(position, longueurs);
+
+//     if (theta1[1] == 0){
+        
+//         coordonnees position2;
+//         position2.x = position.x*cos(120*M_PI/180) + position.y*sin(120*M_PI/180);
+//         position2.y = position.y*cos(120*M_PI/180) - position.x*sin(120*M_PI/180);
+//         position2.z = position.z;
+
+//         theta2 = calculAngle(position2, longueurs);
+//     }
+
+//     if (theta2[1] == 0){
+
+//         coordonnees position3;
+//         position3.x = position.x*cos(120*M_PI/180) - position.y*sin(120*M_PI/180);
+//         position3.y = position.y*cos(120*M_PI/180) + position.x*sin(120*M_PI/180);
+//         position3.z = position.z;
+
+//         theta3 = calculAngle(position3, longueurs);
+//     }
+
+//     valeurRetour.angle.theta1 = theta1[0];
+//     valeurRetour.angle.theta2 = theta2[0];
+//     valeurRetour.angle.theta3 = theta3[0];
+
+//     if (theta3[1] == 0){
+//         printf("No singularity\n");
+//         valeurRetour.reachable = validerAngles(valeurRetour.angle, limites);
+//     }
+
+//     else{
+//         printf("Singularity\n");
+//         valeurRetour.reachable = 1;
+//     }
+
+//     return valeurRetour;
+// }
 
 #endif
