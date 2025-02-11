@@ -111,7 +111,7 @@ def process_frame(video_stream, face_cascade, profile_cascade):
 
 
 # Usage Example:
-http_url = "http://192.168.18.19/live"
+http_url = "http://192.168.137.89/live"
 video_stream = VideoStream(http_url)
 
 # Load the Haar cascades
@@ -122,6 +122,11 @@ try:
     while True:
         faces = process_frame(video_stream, face_cascade, profile_cascade)
         print("Detected Faces:", faces)  # Each frame's detected faces
+
+        with open("data.txt", "w") as file:
+            file.write(str(faces))
+
+
 
         if cv2.waitKey(50) & 0xFF == ord('q'):  # Wait 50ms and check if 'q' is pressed
             break
