@@ -13,7 +13,6 @@
 
 int main()
 {
-    
 
     coordonnees position = {0,0,0};
 
@@ -24,9 +23,7 @@ int main()
     double angleCamera_deg = 0.0;
     double angleCamera_rad = angleCamera_deg * M_PI / 180.0;
 
-    
-    while (true)
-    {
+
         std::string filename = "../data.txt";
 
         std::ifstream file(filename);
@@ -52,8 +49,10 @@ int main()
 
 
         // Coordonnees de la position voulue
-        position = {0.0, 0.0, 0.2};
+        position = {x, y, z};
         bool atteignable = validerPosition(position);
+
+        printf("Atteignable: %b\n", atteignable);
 
         // selon le 3D (en m)
         parametres longueurs = {0.29, 0.122, 0.089, 0.0408};
@@ -64,20 +63,18 @@ int main()
         // Angles des moteurs pour atteindre la position voulue
         retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites, angleCamera_rad);
 
-        printf("----------------------------------------\n");
-        printf("Theta1: %f\n", anglesMoteurs.angle.theta1);
-        printf("Theta2: %f\n", anglesMoteurs.angle.theta2);
-        printf("Theta3: %f\n", anglesMoteurs.angle.theta3);
+        // printf("----------------------------------------\n");
+        // printf("Theta1: %f\n", anglesMoteurs.angle.theta1);
+        // printf("Theta2: %f\n", anglesMoteurs.angle.theta2);
+        // printf("Theta3: %f\n", anglesMoteurs.angle.theta3);
 
 
         if (!anglesMoteurs.reachable && atteignable)
         {
-            printf("envoi angle");
+            // printf("envoi angle");
             envoiAngles(anglesMoteurs.angle);
 
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(500)); // Adjust polling rate
 
-    }
     return 0;
 }

@@ -47,9 +47,9 @@ class PID:
 
 class RobotController:
     def __init__(self):
-        self.pidX = PID(0.1, 0, 0, 20)
-        self.pidY = PID(0.1, 0, 0, 50)
-        self.pidZ = PID(0.1, 0, 0, 50)
+        self.pidX = PID(0.3, 0, 0, 20)
+        self.pidY = PID(0.3, 0, 0, 50)
+        self.pidZ = PID(0.3, 0, 0, 50)
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0
@@ -58,7 +58,7 @@ class RobotController:
     def process(self, faces):
         self.outputX = (self.pidX.compute(faces[3], time.time())) / 100
         self.outputY = (self.pidY.compute(faces[0], time.time())) / 100
-        self.outputZ = (self.pidZ.compute(faces[1], time.time()) + 14) / 100
+        self.outputZ = (abs(self.pidZ.compute(faces[1], time.time())) + 14) / 100
 
 
     def printData(self):

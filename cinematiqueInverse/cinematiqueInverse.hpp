@@ -88,7 +88,7 @@ bool validerAngles(angles angle, limitesMoteurs limites){
        angle.theta2 > limites.moteur_max || angle.theta2 < limites.moteur_min ||
        angle.theta3 > limites.moteur_max || angle.theta3 < limites.moteur_min){
 
-        //printf("Mecaniquement pas possible\n");
+        printf("Mecaniquement pas possible\n");
 
         result = 1;
 
@@ -142,6 +142,8 @@ retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres lon
     // }
 
     valeurRetour.reachable = (theta3[1] == 0) ? validerAngles(valeurRetour.angle, limites) : 1;
+
+    //printf("Reachable: %b\n", valeurRetour.reachable);
 
     return valeurRetour;
 }
