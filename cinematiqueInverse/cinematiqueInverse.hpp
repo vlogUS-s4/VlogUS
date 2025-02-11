@@ -4,6 +4,13 @@
 #include <cmath>
 #include <array>
 #include <stdio.h>
+#include <iostream>
+#include <fcntl.h>
+#include <termios.h>
+#include <unistd.h>
+#include <cstring>
+
+#define SERIAL_PORT "/dev/ttyACM0"
 
 using namespace std;
 
@@ -45,6 +52,7 @@ array<double, 2> calculAngle(coordonnees position, parametres longueurs);
 retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites);
 bool validerAngles(angles angle, limitesMoteurs limites);
 bool validerPosition(coordonnees position);
+bool envoiAngles(angles angle);
 
 array<double, 2> calculAngle(coordonnees position, parametres longueurs){
 
@@ -159,6 +167,38 @@ bool validerPosition(coordonnees position){
     }
 
     return reachable;
+}
+
+bool envoiAngles(angles angle){
+
+    int serial_fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NDELAY);
+    if(serial_fd == -1){
+        cerr<< "Impossible d'ouvrir le port serie!" << endl;
+        return 1;
+    }
+
+    struct termios options;
+    tcgetattr(serial_fd, &options);
+    cfsetispeed(&options, B9600);
+    cfsetospeed(&options, B9600);
+    options.c_cflag = CS8 | CLOCAL | CREAD;
+    options.c_iflag = IGNPAR;
+    options.c_oflag = 0;
+    options.c_lflag = 0;
+    tcflush(serial_fd, TCIFLUSH);
+    tcsetattr(serial_fd, TCSANOW, &options);
+
+    char message[50];
+    snprintf(message, sizeof(message), "%.2f,%.2f,%.2f", angle.theta1, angle.theta2, angle.theta3);
+    int bytes_written = write(serial_fd, message, strlen(message));
+
+    if (bytes_written < 0){
+        cerr << "Erreur lors de l'ecriture sur le port serie" << endl;
+    }
+
+    close(serial_fd);
+
+    return 0;
 }
 
 #endif
