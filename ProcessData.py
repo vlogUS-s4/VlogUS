@@ -1,0 +1,74 @@
+import numpy
+import time
+
+class PID:
+    def __init__(self, kp: float, ki: float, kd: float, setpoint: float = 0.0):
+        """
+        Initialise le contrôleur PID.
+        :param kp: Gain proportionnel
+        :param ki: Gain intégral
+        :param kd: Gain dérivé
+        :param setpoint: Valeur cible
+        """
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.setpoint = setpoint
+        
+        self.previous_error = 0.0
+        self.integral = 0.0
+        self.last_time = None
+
+    def compute(self, measured_value: float, current_time: float):
+        """
+        Calcule la sortie du PID.
+        :param measured_value: Valeur mesurée
+        :param current_time: Temps actuel (en secondes)
+        :return: Commande PID
+        """
+        error = self.setpoint - measured_value
+        delta_time = 0 if self.last_time is None else (current_time - self.last_time)
+        
+        # Calcul de la partie intégrale
+        self.integral += error * delta_time
+        
+        # Calcul de la partie dérivée
+        derivative = 0 if delta_time == 0 else (error - self.previous_error) / delta_time
+        
+        # Calcul de la sortie PID
+        output = self.kp * error + self.ki * self.integral + self.kd * derivative
+        
+        # Mise à jour des variables pour la prochaine itération
+        self.previous_error = error
+        self.last_time = current_time
+        
+        return output
+
+
+class RobotController:
+    def __init__(self):
+        self.pidX = PID(1, 0, 0, 50)
+        self.pidY = PID(1, 0, 0, 30)
+        self.pidZ = PID(1, 0, 0, 50)
+        self.outputX = 0
+        self.outputY = 0
+        self.outputZ = 0
+
+
+    def process(self, faces):
+        self.outputX = self.pidX.compute(faces[0], time.time())
+        self.outputY = self.pidY.compute(faces[1], time.time())
+        self.outputZ = self.pidZ.compute(faces[2], time.time())
+
+
+    def printData(self):
+                
+        with open("data.txt", "w") as file:
+            output_str = f"{self.outputX:.2f}\t{self.outputY:.2f}\t{self.outputZ:.2f}"
+
+            file.write(str(output_str))
+        file.close()
+
+
+
+#Hauteur: 15cm à 38cm

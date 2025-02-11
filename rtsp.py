@@ -2,6 +2,9 @@ import cv2
 import numpy as np
 import time
 from threading import Thread
+from ProcessData import RobotController
+
+
 
 param_only_track_one_face = False
 
@@ -90,7 +93,7 @@ def process_frame(video_stream, face_cascade, profile_cascade):
 
     # If no faces detected, return None
     if len(filtered_faces) == 0:
-        return None
+        return (0,0,0,0,0)
 
     # If exactly one face detected, return its position and orientation
     if len(filtered_faces) == 1 or param_only_track_one_face:
@@ -118,17 +121,20 @@ video_stream = VideoStream(http_url)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 profile_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
 
+RC = RobotController()
+
+
 try:
     while True:
         faces = process_frame(video_stream, face_cascade, profile_cascade)
         print("Detected Faces:", faces)  # Each frame's detected faces
 
-        with open("data.txt", "w") as file:
-            file.write(str(faces))
+        RC.process(faces)
+        RC.printData()
 
 
 
-        if cv2.waitKey(50) & 0xFF == ord('q'):  # Wait 50ms and check if 'q' is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):  # Wait 50ms and check if 'q' is pressed
             break
 
 except KeyboardInterrupt:

@@ -4,11 +4,15 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cstring>
+#include <fstream>
+#include <string>
+#include <thread>
+#include <chrono>
 
 #define SERIAL_PORT "/dev/ttyACM0"
 
 int main(){
-
+/* 
     int serial_fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NDELAY);
     if(serial_fd == -1){
         cerr<< "Impossible d'ouvrir le port serie!" << endl;
@@ -57,6 +61,23 @@ int main(){
 
         close(serial_fd);
     
+    } */
+
+   std::string filename = "../data.txt";
+    
+    while (true) {
+        std::ifstream file(filename);
+        if (file.is_open()) {
+            std::string line;
+            if (std::getline(file, line)) {
+                std::cout << "Read: " << line << std::endl;
+            }
+            file.close();
+        } else {
+            std::cerr << "Error opening file" << std::endl;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Adjust polling rate
     }
 
     return 0;
