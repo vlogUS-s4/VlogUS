@@ -70,7 +70,14 @@ int main(){
         if (file.is_open()) {
             std::string line;
             if (std::getline(file, line)) {
-                std::cout << "Read: " << line << std::endl;
+                // std::cout << "Read: " << line << std::endl;
+                   std::istringstream iss(line);
+
+                    float x, y, z;
+
+                    iss >> x >> y >> z;  // "Read:" est ignoré, et les trois nombres sont stockés
+
+                    std::cout << "x = " << x << ", y = " << y << ", z = " << z << std::endl;
             }
             file.close();
         } else {
@@ -79,6 +86,8 @@ int main(){
 
         std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Adjust polling rate
     }
+
+ 
 
     return 0;
 

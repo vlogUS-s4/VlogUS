@@ -47,24 +47,24 @@ class PID:
 
 class RobotController:
     def __init__(self):
-        self.pidX = PID(1, 0, 0, 50)
-        self.pidY = PID(1, 0, 0, 30)
-        self.pidZ = PID(1, 0, 0, 50)
+        self.pidX = PID(0.3, 0, 0, 20)
+        self.pidY = PID(0.2, 0, 0, 50)
+        self.pidZ = PID(0.4, 0, 0, 50)
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0
 
 
     def process(self, faces):
-        self.outputX = self.pidX.compute(faces[0], time.time())
-        self.outputY = self.pidY.compute(faces[1], time.time())
-        self.outputZ = self.pidZ.compute(faces[2], time.time())
+        self.outputX = (self.pidX.compute(faces[3], time.time())) / 100
+        self.outputY = (self.pidY.compute(faces[0], time.time())) / 100
+        self.outputZ = (self.pidZ.compute(faces[1], time.time()) + 14) / 100
 
 
     def printData(self):
                 
         with open("data.txt", "w") as file:
-            output_str = f"{self.outputX:.2f}\t{self.outputY:.2f}\t{self.outputZ:.2f}"
+            output_str = f"{self.outputX:.2f}\t{self.outputZ:.2f}\t{self.outputY:.2f}"
 
             file.write(str(output_str))
         file.close()
