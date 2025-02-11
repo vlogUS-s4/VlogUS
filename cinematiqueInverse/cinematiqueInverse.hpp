@@ -35,15 +35,16 @@ struct limitesMoteurs
     double moteur_min;
 };
 
-struct retour
+struct retourCinematiqueInverse
 {
     angles angle;
     bool reachable;
 };
 
 array<double, 2> calculAngle(coordonnees position, parametres longueurs);
-retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites);
+retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites);
 bool validerAngles(angles angle, limitesMoteurs limites);
+bool validerPosition(coordonnees position);
 
 array<double, 2> calculAngle(coordonnees position, parametres longueurs){
 
@@ -88,7 +89,7 @@ bool validerAngles(angles angle, limitesMoteurs limites){
     return result;
 }
 
-retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites, double angleCamera) {
+retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites, double angleCamera) {
     printf("Position initiale: %f, %f, %f\n", position.x, position.y, position.z);
     
     // Appliquer la rotation du référentiel mobile
@@ -102,7 +103,7 @@ retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMot
     array<double, 2> theta1 = calculAngle(positionTransformee, longueurs);
     array<double, 2> theta2 = {0, 0};
     array<double, 2> theta3 = {0, 0};
-    retour valeurRetour;
+    retourCinematiqueInverse valeurRetour;
 
     if (theta1[1] == 0) {
         coordonnees position2;
@@ -128,52 +129,36 @@ retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMot
     return valeurRetour;
 }
 
-// retour cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites){
-    
-//     printf("Position: %f, %f, %f\n", position.x, position.y, position.z);
+bool validerPosition(coordonnees position){
 
-//     array<double, 2> theta1 = {0, 0};
-//     array<double, 2> theta2 = {0, 0};
-//     array<double, 2> theta3 = {0, 0};
-//     retour valeurRetour;
+    //Si atteignable: 1 / pas atteignable: 0
+    bool reachable = 0;
 
-//     theta1 = calculAngle(position, longueurs);
+    if(position.z >= 0.2 && position.z <= 0.38){
 
-//     if (theta1[1] == 0){
+        double max_x_y = (-11343*pow(position.z, 5)+15741*pow(position.z,4)-8654.7*pow(position.z,3)+2355.5*pow(position.z,2)-317.38*position.z+17.017);
         
-//         coordonnees position2;
-//         position2.x = position.x*cos(120*M_PI/180) + position.y*sin(120*M_PI/180);
-//         position2.y = position.y*cos(120*M_PI/180) - position.x*sin(120*M_PI/180);
-//         position2.z = position.z;
+        printf("Max_x_y: %f\n", max_x_y);
 
-//         theta2 = calculAngle(position2, longueurs);
-//     }
+        if(position.x <= max_x_y || position.y <= max_x_y){
+            reachable = 1;
+            printf("Position atteignable avec ball bearing\n");
+        }
+    }
 
-//     if (theta2[1] == 0){
+    else if(position.z >= 0.14 && position.z <= 0.19){
 
-//         coordonnees position3;
-//         position3.x = position.x*cos(120*M_PI/180) - position.y*sin(120*M_PI/180);
-//         position3.y = position.y*cos(120*M_PI/180) + position.x*sin(120*M_PI/180);
-//         position3.z = position.z;
+        double max_x_y = (-31250*pow(position.z,4)+22060*pow(position.z,3)-5782.3*pow(position.z,2)+668.41*position.z-28.773);
 
-//         theta3 = calculAngle(position3, longueurs);
-//     }
+        printf("Max_x_y: %f\n", max_x_y);
 
-//     valeurRetour.angle.theta1 = theta1[0];
-//     valeurRetour.angle.theta2 = theta2[0];
-//     valeurRetour.angle.theta3 = theta3[0];
+        if(position.x <= max_x_y || position.y <= max_x_y){
+            reachable = 1;
+            printf("Position atteignable avec ball bearing\n");
+        }
+    }
 
-//     if (theta3[1] == 0){
-//         printf("No singularity\n");
-//         valeurRetour.reachable = validerAngles(valeurRetour.angle, limites);
-//     }
-
-//     else{
-//         printf("Singularity\n");
-//         valeurRetour.reachable = 1;
-//     }
-
-//     return valeurRetour;
-// }
+    return reachable;
+}
 
 #endif
