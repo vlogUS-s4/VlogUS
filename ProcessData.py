@@ -47,9 +47,9 @@ class PID:
 
 class RobotController:
     def __init__(self):
-        self.pidX = PID(0.3, 0, 0, 20)
-        self.pidY = PID(0.2, 0, 0, 50)
-        self.pidZ = PID(0.4, 0, 0, 50)
+        self.pidX = PID(0.1, 0, 0, 20)
+        self.pidY = PID(0.1, 0, 0, 50)
+        self.pidZ = PID(0.1, 0, 0, 50)
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0

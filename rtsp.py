@@ -118,8 +118,8 @@ http_url = "http://192.168.137.89/live"
 video_stream = VideoStream(http_url)
 
 # Load the Haar cascades
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-profile_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
+face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+profile_cascade = cv2.CascadeClassifier("haarcascade_profileface.xml")
 
 RC = RobotController()
 
