@@ -53,6 +53,8 @@ void Delta::configureServo(uint8_t dxlID)
 
             return;
         }
+
+        dxl.reboot(dxlID);
    
         // Turn off torque when configuring items in EEPROM area
         dxl.torqueOff(dxlID);
@@ -145,7 +147,6 @@ void Delta::detectServo() {
             DEBUG_SERIAL.println(id);
             servoIDs[i] = id;
             i++;
-            dxl.reboot(id);
             configureServo(id);
         }
     }
