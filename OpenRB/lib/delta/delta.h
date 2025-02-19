@@ -47,11 +47,11 @@
 class Delta {
 public:
 
-    void configureDXL(uint8_t dxlID);
+    void configureServo(uint8_t dxlID);
     void setup();
-    void readSerial();
-    void setPositions(double position[]);
-    void detectDXL();
+    void readAngleCommand();
+    void setServoPositions(double position[]);
+    void detectServo();
 
 
 private:
