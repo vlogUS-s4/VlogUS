@@ -47,7 +47,6 @@ int main()
             //std::cerr << "Error opening file" << std::endl;
         }
 
-
         // Coordonnees de la position voulue
         position.x = x;
         position.y = y;

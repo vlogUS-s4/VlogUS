@@ -11,7 +11,7 @@
 #include <cstring>
 #include <sstream>
 
-#define SERIAL_PORT "/dev/ttyACM0"
+#define SERIAL_PORT "/dev/cu.usbmodem1411201"
 
 using namespace std;
 
@@ -205,6 +205,7 @@ bool envoiAngles(angles angle){
     std::string data = msg.str();
     
     write(serial_fd, data.c_str(), data.length());
+    printf(data.c_str());
 
     close(serial_fd);
 
