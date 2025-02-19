@@ -5,13 +5,41 @@
 //This namespace is required to use Control table item names
 using namespace ControlTableItem;
 
+
+Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 const float DXL_PROTOCOL_VERSION = 2.0;
 
 #define SPEED 50 // Valeur/255       0 = valeur maximale
 
-Dynamixel2Arduino dxl(DXL_SERIAL, DXL_DIR_PIN);
 
-void Delta::configureDXL(uint8_t dxlID)
+void Delta::setup()
+{
+
+    // Set Port baudrate to 57600bps. This has to match with DYNAMIXEL baudrate.
+    dxl.begin(57600);
+
+    if (dxl.getLastLibErrCode())
+    {
+        DEBUG_SERIAL.println("Could not init serial port!");
+        DEBUG_SERIAL.print("Last error code: ");
+        DEBUG_SERIAL.println(dxl.getLastLibErrCode());
+    }
+    // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
+    if (!dxl.setPortProtocolVersion(DXL_PROTOCOL_VERSION))
+    {
+        DEBUG_SERIAL.println("Could not set protocol version!");
+        DEBUG_SERIAL.print("Last error code: ");
+        DEBUG_SERIAL.println(dxl.getLastLibErrCode());
+    }
+
+    DEBUG_SERIAL.println("Setup done.");
+    DEBUG_SERIAL.print("Last error code: ");
+    DEBUG_SERIAL.println(dxl.getLastLibErrCode());
+
+    detectServo();
+}
+
+void Delta::configureServo(uint8_t dxlID)
 {
 
 
@@ -76,54 +104,32 @@ void Delta::setPositions(double position[])
 
 }
 
-void Delta::readSerial() {
-    int count = 0;  // Nombre de valeurs lues
-    unsigned long startTime = millis();  // Temps de départ
-
-    // while (count < 3) {  // Lire jusqu'à 3 valeurs
-    //     if (Serial.available() >= sizeof(double)) {  // Attente de 8 octets
-    //         double valeur;
-    //         Serial.readBytes((char*)&valeur, sizeof(double));  // Lecture binaire
-    //         Serial.print("Valeur reçue : ");
-    //         Serial.println(valeur, 6);
-    //         pos[count] = valeur;
-    //         count++;  // Incrémenter le compteur
-
-    //     }
-    //     // Sortir si le temps d'attente dépasse 5 secondes
-    //     if (millis() - startTime > 5000) {
-    //         Serial.println("Timeout: pas assez de valeurs reçues.");
-    //         break;
-    //     }
-    // }
+void Delta::readAngleCommand() {
+    if (Serial.available() > 0) {
+        double positions[] = {175.0, 175.0, 175.0};
+    
+        double angle1 = Serial.parseFloat();
+        double angle2 = Serial.parseFloat();
+        double angle3 = Serial.parseFloat();
+    
+        Serial.print("Reçu : ");
+        Serial.print(angle1);
+        Serial.print(", ");
+        Serial.print(angle2);
+        Serial.print(", ");
+        Serial.println(angle3);
+    
+        positions[0] = angle1;
+        positions[1] = angle2;
+        positions[2] = angle3;
+    
+        setServoPositions(positions);
+    
+    }
 }
 
 
-void Delta::setup()
-{
-
-    // Set Port baudrate to 57600bps. This has to match with DYNAMIXEL baudrate.
-    dxl.begin(57600);
-    if (dxl.getLastLibErrCode())
-    {
-        DEBUG_SERIAL.println("Could not init serial port!");
-        DEBUG_SERIAL.print("Last error code: ");
-        DEBUG_SERIAL.println(dxl.getLastLibErrCode());
-    }
-    // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
-    if (!dxl.setPortProtocolVersion(DXL_PROTOCOL_VERSION))
-    {
-        DEBUG_SERIAL.println("Could not set protocol version!");
-        DEBUG_SERIAL.print("Last error code: ");
-        DEBUG_SERIAL.println(dxl.getLastLibErrCode());
-    }
-
-    DEBUG_SERIAL.println("Setup done.");
-    DEBUG_SERIAL.print("Last error code: ");
-    DEBUG_SERIAL.println(dxl.getLastLibErrCode());
-}
-
-void Delta::detectDXL() {
+void Delta::detectServo() {
     int i = 0;
     for (uint8_t id = 0; id < 254; id++) { // Tester les ID de 0 à 253
         if (dxl.ping(id)) {
@@ -131,7 +137,7 @@ void Delta::detectDXL() {
             DEBUG_SERIAL.println(id);
             servoIDs[i] = id;
             i++;
-            configureDXL(id);
+            configureServo(id);
         }
     }
 }
