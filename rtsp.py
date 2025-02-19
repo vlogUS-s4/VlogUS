@@ -114,7 +114,7 @@ def process_frame(video_stream, face_cascade, profile_cascade):
 
 
 # Usage Example:
-http_url = "http://192.168.137.89/live"
+http_url = "http://192.168.137.96/live"
 video_stream = VideoStream(http_url)
 
 # Load the Haar cascades

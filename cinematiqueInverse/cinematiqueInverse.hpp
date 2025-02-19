@@ -9,6 +9,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <cstring>
+#include <sstream>
 
 #define SERIAL_PORT "/dev/ttyACM0"
 
@@ -199,13 +200,11 @@ bool envoiAngles(angles angle){
     tcflush(serial_fd, TCIFLUSH);
     tcsetattr(serial_fd, TCSANOW, &options);
 
-    char message[50];
-    snprintf(message, sizeof(message), "%.2f,%.2f,%.2f", angle.theta1, angle.theta2, angle.theta3);
-    int bytes_written = write(serial_fd, message, strlen(message));
-
-    if (bytes_written < 0){
-        //cerr << "Erreur lors de l'ecriture sur le port serie" << endl;
-    }
+    std::ostringstream msg;
+    msg << angle.theta1 << " " << angle.theta2 << " " << angle.theta3 << "\n";
+    std::string data = msg.str();
+    
+    write(serial_fd, data.c_str(), data.length());
 
     close(serial_fd);
 
