@@ -28,8 +28,8 @@ void setup() {
   
   // Use UART port of DYNAMIXEL Shield to debug.
   Serial.begin(9600);  // Port USB (débogage)  while(!DEBUG_SERIAL); // On attend que la communication série pour les messages soit prête.
-  // deltabot.setup();
-  // deltabot.detectDXL();
+  deltabot.setup();
+  deltabot.detectDXL();
 
   // deltabot.configureDXL(DXL_ID1, DXL_ID2, DXL_ID3);
 }
