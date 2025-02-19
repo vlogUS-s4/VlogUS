@@ -48,14 +48,22 @@ void loop() {
 
 
     if (Serial.available() > 0) {
-        double angle1 = Serial.parseFloat();
-        double angle2 = Serial.parseFloat();
-        double angle3 = Serial.parseFloat();
+        // double angle1 = Serial.parseFloat();
+        // double angle2 = Serial.parseFloat();
+        // double angle3 = Serial.parseFloat();
         //int angle1 = Serial.parseFloat();
+
+        String input = Serial.readStringUntil('\n'); // Lire toute la ligne
+        double angle1, angle2, angle3;
+        sscanf(input.c_str(), "%lf %lf %lf", &angle1, &angle2, &angle3);
+
+
  
         Serial.print("Reçu : ");
         Serial.print(angle1);
         Serial.print(", ");
+
+        
         Serial.print(angle2);
         Serial.print(", ");
         Serial.println(angle3);
