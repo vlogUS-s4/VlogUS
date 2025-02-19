@@ -3,7 +3,8 @@ import numpy as np
 import time
 from threading import Thread
 
-param_only_track_one_face = False
+param_only_track_one_face = True
+previous_face = (50,50,50,50,0)
 
 class VideoStream:
     def __init__(self, rtsp_url):
@@ -56,6 +57,7 @@ def filter_close_faces(faces, image_width, image_height, threshold=10):
 
 def process_frame(video_stream, face_cascade, profile_cascade):
     """Process a single frame and return detected faces"""
+    global previous_face
     frame = video_stream.read()
     if frame is None:
         return []
@@ -93,9 +95,21 @@ def process_frame(video_stream, face_cascade, profile_cascade):
         return None
 
     # If exactly one face detected, return its position and orientation
-    if len(filtered_faces) == 1 or param_only_track_one_face:
+    if len(filtered_faces) == 1:
         cx, cy, w_f, h_f, orientation = filtered_faces[0]
+        previous_face = filtered_faces[0]
         return round((cx / w) * 100, 2), round((cy / h) * 100, 2), round((w_f / w) * 100, 2), round((h_f / h) * 100, 2), orientation
+    if param_only_track_one_face:
+        face1_error = (filtered_faces[0][0]- previous_face[0])**2 +(filtered_faces[0][1]-previous_face[1])**2
+        face2_error = (filtered_faces[1][0]- previous_face[0])**2+(filtered_faces[1][1]-previous_face[1])**2
+        if face1_error < face2_error:
+            cx, cy, w_f, h_f, orientation = filtered_faces[0]
+        else:
+            cx, cy, w_f, h_f, orientation = filtered_faces[1]
+        previous_face = (cx, cy, w_f, h_f, orientation)
+        return round((cx / w) * 100, 2), round((cy / h) * 100, 2), round((w_f / w) * 100, 2), round((h_f / h) * 100, 2), orientation
+
+
 
     # If more than one face is detected, compute the average position and distance
     x1, y1, _, _, _ = filtered_faces[0]
@@ -111,7 +125,7 @@ def process_frame(video_stream, face_cascade, profile_cascade):
 
 
 # Usage Example:
-http_url = "http://192.168.18.19/live"
+http_url = "http://192.168.137.89/live"
 video_stream = VideoStream(http_url)
 
 # Load the Haar cascades
