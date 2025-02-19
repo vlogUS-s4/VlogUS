@@ -57,7 +57,6 @@ public:
 private:
     uint8_t servoIDs[3];
     double pos[3];
-    void setPositions();
 
 };
 
