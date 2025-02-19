@@ -33,6 +33,7 @@ void Delta::configureDXL(uint8_t dxlID)
         
         // Limit the maximum velocity in Position Control Mode. Use 0 for Max speed
         dxl.writeControlTableItem(PROFILE_VELOCITY, dxlID, SPEED);
+        Serial.println("Servos configurées");
 }
 
 void Delta::setPositions()

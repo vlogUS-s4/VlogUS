@@ -36,7 +36,7 @@ void setup() {
 
 void loop() {
   double positions[] = {175.0, 175.0, 175.0};
-  // deltabot.setPositions(positions);
+  deltabot.setPositions(positions);
   // // put your main code here, to run repeatedly:
   // delay(1000);
   // positions[0] = 230.0;
@@ -45,18 +45,18 @@ void loop() {
   // deltabot.setPositions(positions);
 
   // delay(1000);
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n'); // Lire toute la ligne
+    input.trim(); // Supprimer les espaces ou \r parasites
 
+    // Découpage de la ligne en trois parties
+    int firstSpace = input.indexOf(' ');
+    int secondSpace = input.indexOf(' ', firstSpace + 1);
 
-    if (Serial.available() > 0) {
-        // double angle1 = Serial.parseFloat();
-        // double angle2 = Serial.parseFloat();
-        // double angle3 = Serial.parseFloat();
-        //int angle1 = Serial.parseFloat();
-
-        String input = Serial.readStringUntil('\n'); // Lire toute la ligne
-        double angle1, angle2, angle3;
-        sscanf(input.c_str(), "%lf %lf %lf", &angle1, &angle2, &angle3);
-
+    if (firstSpace != -1 && secondSpace != -1) { // Vérifie qu'il y a bien 2 espaces
+        double angle1 = input.substring(0, firstSpace).toFloat();
+        double angle2 = input.substring(firstSpace + 1, secondSpace).toFloat();
+        double angle3 = input.substring(secondSpace + 1).toFloat();
 
  
         Serial.print("Reçu : ");
@@ -72,8 +72,11 @@ void loop() {
         positions[1] = angle2;
         positions[2] = angle3;
 
-        // deltabot.setPositions(positions);
-
+        deltabot.setPositions(positions);
+    } else {
+        Serial.println("Erreur : format invalide !");
     }
+}
+
 
 }
