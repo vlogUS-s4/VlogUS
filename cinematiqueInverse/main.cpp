@@ -14,16 +14,16 @@
 int main()
 {
 
-    coordonnees position = {0,0,0};
+    coordonnees position;
 
 
-    double x, y, z;
+    double x = 0, y = 0, z = 0;
 
     // Angle de rotation de la caméra
     double angleCamera_deg = 0.0;
     double angleCamera_rad = angleCamera_deg * M_PI / 180.0;
 
-
+    while(1) {
         std::string filename = "../data.txt";
 
         std::ifstream file(filename);
@@ -38,7 +38,7 @@ int main()
 
                 iss >> x >> z >> y; // "Read:" est ignoré, et les trois nombres sont stockés
 
-                //std::cout << "x = " << x << ", y = " << z << ", z = " << y << std::endl;
+                std::cout << "x = " << x << ", y = " << z << ", z = " << y << std::endl;
             }
         }
         else
@@ -49,10 +49,12 @@ int main()
 
 
         // Coordonnees de la position voulue
-        position = {x, y, z};
+        position.x = x;
+        position.y = y;
+        position.z = z;
         bool atteignable = validerPosition(position);
 
-        printf("Atteignable: %b\n", atteignable);
+        printf("Atteignable: %d\n", atteignable);
 
         // selon le 3D (en m)
         parametres longueurs = {0.29, 0.122, 0.089, 0.0408};
@@ -75,6 +77,8 @@ int main()
             envoiAngles(anglesMoteurs.angle);
 
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
 
     return 0;
 }
