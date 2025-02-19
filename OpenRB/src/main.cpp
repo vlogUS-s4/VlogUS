@@ -24,7 +24,7 @@ void setup() {
   Serial.begin(9600);  // Port USB (débogage)  while(!DEBUG_SERIAL); // On attend que la communication série pour les messages soit prête.
   
   deltabot.setup();
-
+// 
 }
 
 void loop() {
