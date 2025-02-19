@@ -145,6 +145,7 @@ void Delta::detectServo() {
             DEBUG_SERIAL.println(id);
             servoIDs[i] = id;
             i++;
+            dxl.reboot(id);
             configureServo(id);
         }
     }
