@@ -50,15 +50,20 @@ class RobotController:
         self.pidX = PID(0.3, 0, 0, 20)
         self.pidY = PID(0.3, 0, 0, 50)
         self.pidZ = PID(0.3, 0, 0, 50)
+        self.pidStepper = PID(0.3, 0, 0, 50)
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0
+        self.outputStepper = 0
 
 
     def process(self, faces):
         self.outputX = (self.pidX.compute(faces[3], time.time())) / 100
         self.outputY = (self.pidY.compute(faces[0], time.time())) / 100
         self.outputZ = (abs(self.pidZ.compute(faces[1], time.time())) + 14) / 100
+        reachable = self.validatePosition(self.outputX, self.outputY, self.outputZ)
+        if not reachable:
+            self.outputStepper = (self.pidStepper.compute(faces[0], time.time()))/100
 
 
     def printData(self):
@@ -69,6 +74,15 @@ class RobotController:
             file.write(str(output_str))
         file.close()
 
-
-
+    def validatePosition(x,y,z):
+        reachable = False
+        if z >= 0.2 & z <=0.38:
+            max_x_y = (z**5+15741*z**4-8654.7*z**3+2355.5*z**2-317.38*z+17.017)
+            if x <= max_x_y | y <= max_x_y:
+                reachable = True
+        elif z >= 0.14 & z <= 0.19:
+            max_x_y = (-31250*z**4+22060*z**3-5782.3*z**2+668.41*z-28.773)
+            if x <= max_x_y | y <= max_x_y:
+                reachable = True
+        return reachable
 #Hauteur: 15cm à 38cm

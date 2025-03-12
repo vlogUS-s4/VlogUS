@@ -55,66 +55,71 @@ bool validerAngles(angles angle, limitesMoteurs limites);
 bool validerPosition(coordonnees position);
 bool envoiAngles(angles angle);
 
-array<double, 2> calculAngle(coordonnees position, parametres longueurs){
+array<double, 2> calculAngle(coordonnees position, parametres longueurs)
+{
 
-    //result: [angle, singularity] (0: no singularity, 1: singularity)
+    // result: [angle, singularity] (0: no singularity, 1: singularity)
     array<double, 2> result = {0, 0};
 
     position.y = position.y - longueurs.rayonEffecteur;
 
-    double z_offset = ((pow(position.x, 2)) + (pow(position.y, 2)) + (pow(position.z, 2)) + (pow(longueurs.longBicep, 2)) - (pow(longueurs.longAvantBras, 2)) + (pow(longueurs.rayonBase, 2)))/(2*position.z);
-    double z_slope = (-longueurs.rayonBase - position.y)/(position.z);
+    double z_offset = ((pow(position.x, 2)) + (pow(position.y, 2)) + (pow(position.z, 2)) + (pow(longueurs.longBicep, 2)) - (pow(longueurs.longAvantBras, 2)) + (pow(longueurs.rayonBase, 2))) / (2 * position.z);
+    double z_slope = (-longueurs.rayonBase - position.y) / (position.z);
 
-    double reachable = -(pow((z_offset + z_slope*(-longueurs.rayonBase)), 2)) + longueurs.longBicep*(pow(z_slope, 2)*longueurs.longBicep + longueurs.longBicep);
+    double reachable = -(pow((z_offset + z_slope * (-longueurs.rayonBase)), 2)) + longueurs.longBicep * (pow(z_slope, 2) * longueurs.longBicep + longueurs.longBicep);
 
-    if (reachable < 0) {
+    if (reachable < 0)
+    {
         result[1] = 1;
-    } 
-    else {
-        double coordy = (-longueurs.rayonBase - z_offset*z_slope - sqrt(reachable))/(pow(z_slope, 2) + 1);
-        double coordz = z_offset + z_slope*coordy;
+    }
+    else
+    {
+        double coordy = (-longueurs.rayonBase - z_offset * z_slope - sqrt(reachable)) / (pow(z_slope, 2) + 1);
+        double coordz = z_offset + z_slope * coordy;
         result[0] = atan2(-coordz, -longueurs.rayonBase - coordy) * 180 / M_PI;
         result[0] = 180 - result[0];
     }
 
     return result;
-
 }
 
-bool validerAngles(angles angle, limitesMoteurs limites){
+bool validerAngles(angles angle, limitesMoteurs limites)
+{
 
     bool result = 0;
 
-    if(angle.theta1 > limites.moteur_max || angle.theta1 < limites.moteur_min ||
-       angle.theta2 > limites.moteur_max || angle.theta2 < limites.moteur_min ||
-       angle.theta3 > limites.moteur_max || angle.theta3 < limites.moteur_min){
+    if (angle.theta1 > limites.moteur_max || angle.theta1 < limites.moteur_min ||
+        angle.theta2 > limites.moteur_max || angle.theta2 < limites.moteur_min ||
+        angle.theta3 > limites.moteur_max || angle.theta3 < limites.moteur_min)
+    {
 
         printf("Mecaniquement pas possible\n");
 
         result = 1;
-
-       }
+    }
 
     return result;
 }
 
-retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites, double angleCamera) {
-    //printf("Position initiale: %f, %f, %f\n", position.x, position.y, position.z);
-    
+retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres longueurs, limitesMoteurs limites, double angleCamera)
+{
+    // printf("Position initiale: %f, %f, %f\n", position.x, position.y, position.z);
+
     // Appliquer la rotation du référentiel mobile
     coordonnees positionTransformee;
     positionTransformee.x = position.x * cos(angleCamera) - position.y * sin(angleCamera);
     positionTransformee.y = position.x * sin(angleCamera) + position.y * cos(angleCamera);
     positionTransformee.z = position.z;
-    
-    //printf("Position transformee: %f, %f, %f\n", positionTransformee.x, positionTransformee.y, positionTransformee.z);
-    
+
+    // printf("Position transformee: %f, %f, %f\n", positionTransformee.x, positionTransformee.y, positionTransformee.z);
+
     array<double, 2> theta1 = calculAngle(positionTransformee, longueurs);
     array<double, 2> theta2 = {0, 0};
     array<double, 2> theta3 = {0, 0};
     retourCinematiqueInverse valeurRetour;
 
-    if (theta1[1] == 0) {
+    if (theta1[1] == 0)
+    {
         coordonnees position2;
         position2.x = positionTransformee.x * cos(120 * M_PI / 180) + positionTransformee.y * sin(120 * M_PI / 180);
         position2.y = positionTransformee.y * cos(120 * M_PI / 180) - positionTransformee.x * sin(120 * M_PI / 180);
@@ -122,7 +127,8 @@ retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres lon
         theta2 = calculAngle(position2, longueurs);
     }
 
-    if (theta2[1] == 0) {
+    if (theta2[1] == 0)
+    {
         coordonnees position3;
         position3.x = positionTransformee.x * cos(120 * M_PI / 180) - positionTransformee.y * sin(120 * M_PI / 180);
         position3.y = positionTransformee.y * cos(120 * M_PI / 180) + positionTransformee.x * sin(120 * M_PI / 180);
@@ -133,7 +139,7 @@ retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres lon
     valeurRetour.angle.theta1 = theta1[0];
     valeurRetour.angle.theta2 = theta2[0];
     valeurRetour.angle.theta3 = theta3[0];
- 
+
     // if(theta3[1] == 0 && validerAngles(valeurRetour.angle, limites) == 0){
     //     valeurRetour.reachable = 0;
     // }
@@ -144,48 +150,55 @@ retourCinematiqueInverse cinematiqueInverse(coordonnees position, parametres lon
 
     valeurRetour.reachable = (theta3[1] == 0) ? validerAngles(valeurRetour.angle, limites) : 1;
 
-    //printf("Reachable: %b\n", valeurRetour.reachable);
+    // printf("Reachable: %b\n", valeurRetour.reachable);
 
     return valeurRetour;
 }
 
-bool validerPosition(coordonnees position){
+bool validerPosition(coordonnees position)
+{
 
-    //Si atteignable: 1 / pas atteignable: 0
+    // Si atteignable: 1 / pas atteignable: 0
     bool reachable = 0;
 
-    if(position.z >= 0.2 && position.z <= 0.38){
+    if (position.z >= 0.2 && position.z <= 0.38)
+    {
 
-        double max_x_y = (-11343*pow(position.z, 5)+15741*pow(position.z,4)-8654.7*pow(position.z,3)+2355.5*pow(position.z,2)-317.38*position.z+17.017);
-        
-        //printf("Max_x_y: %f\n", max_x_y);
+        double max_x_y = (-11343 * pow(position.z, 5) + 15741 * pow(position.z, 4) - 8654.7 * pow(position.z, 3) + 2355.5 * pow(position.z, 2) - 317.38 * position.z + 17.017);
 
-        if(position.x <= max_x_y || position.y <= max_x_y){
+        // printf("Max_x_y: %f\n", max_x_y);
+
+        if (position.x <= max_x_y || position.y <= max_x_y)
+        {
             reachable = 1;
-            //printf("Position atteignable avec ball bearing\n");
+            // printf("Position atteignable avec ball bearing\n");
         }
     }
 
-    else if(position.z >= 0.14 && position.z <= 0.19){
+    else if (position.z >= 0.14 && position.z <= 0.19)
+    {
 
-        double max_x_y = (-31250*pow(position.z,4)+22060*pow(position.z,3)-5782.3*pow(position.z,2)+668.41*position.z-28.773);
+        double max_x_y = (-31250 * pow(position.z, 4) + 22060 * pow(position.z, 3) - 5782.3 * pow(position.z, 2) + 668.41 * position.z - 28.773);
 
-        //printf("Max_x_y: %f\n", max_x_y);
+        // printf("Max_x_y: %f\n", max_x_y);
 
-        if(position.x <= max_x_y || position.y <= max_x_y){
+        if (position.x <= max_x_y || position.y <= max_x_y)
+        {
             reachable = 1;
-            //printf("Position atteignable avec ball bearing\n");
+            // printf("Position atteignable avec ball bearing\n");
         }
     }
 
     return reachable;
 }
 
-bool envoiAngles(angles angle){
+bool envoiAngles(angles angle)
+{
 
     int serial_fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NDELAY);
-    if(serial_fd == -1){
-        //cerr<< "Impossible d'ouvrir le port serie!" << endl;
+    if (serial_fd == -1)
+    {
+        // cerr<< "Impossible d'ouvrir le port serie!" << endl;
         return 1;
     }
 
@@ -203,7 +216,7 @@ bool envoiAngles(angles angle){
     std::ostringstream msg;
     msg << angle.theta1 << " " << angle.theta2 << " " << angle.theta3 << "\n";
     std::string data = msg.str();
-    
+
     write(serial_fd, data.c_str(), data.length());
     printf(data.c_str());
 
