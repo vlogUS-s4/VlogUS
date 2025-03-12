@@ -114,7 +114,7 @@ def process_frame(video_stream, face_cascade, profile_cascade):
 
 
 # Usage Example:
-http_url = "http://192.168.137.96/live"
+http_url = "http://192.168.137.122/live"
 video_stream = VideoStream(http_url)
 
 # Load the Haar cascades
@@ -128,7 +128,6 @@ try:
     while True:
         faces = process_frame(video_stream, face_cascade, profile_cascade)
         print("Detected Faces:", faces)  # Each frame's detected faces
-
         RC.process(faces)
         if faces!=(0,0,0,0,0):
             RC.printData()
