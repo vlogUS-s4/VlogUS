@@ -53,6 +53,8 @@ void Delta::configureServo(uint8_t dxlID)
 
             return;
         }
+
+        dxl.reboot(dxlID);
    
         // Turn off torque when configuring items in EEPROM area
         dxl.torqueOff(dxlID);
@@ -64,15 +66,8 @@ void Delta::configureServo(uint8_t dxlID)
         Serial.println("Servos configurées");
 }
 
-void Delta::setPositions()
-{
-    for (int i = 0; i < 3; i++)
-    {
-        dxl.setGoalPosition(servoIDs[i], pos[i], UNIT_DEGREE);
-    }
-    delay(1000);
-}
-void Delta::setPositions(double position[])
+
+void Delta::setServoPositions(double position[])
 {
     float f_present_position = 0.0;
     int i;
@@ -106,27 +101,41 @@ void Delta::setPositions(double position[])
 }
 
 void Delta::readAngleCommand() {
+
+    double positions[3];
     if (Serial.available() > 0) {
-        double positions[] = {175.0, 175.0, 175.0};
+        String input = Serial.readStringUntil('\n'); // Lire toute la ligne
+        input.trim(); // Supprimer les espaces ou \r parasites
     
-        double angle1 = Serial.parseFloat();
-        double angle2 = Serial.parseFloat();
-        double angle3 = Serial.parseFloat();
+        // Découpage de la ligne en trois parties
+        int firstSpace = input.indexOf(' ');
+        int secondSpace = input.indexOf(' ', firstSpace + 1);
     
-        Serial.print("Reçu : ");
-        Serial.print(angle1);
-        Serial.print(", ");
-        Serial.print(angle2);
-        Serial.print(", ");
-        Serial.println(angle3);
+        if (firstSpace != -1 && secondSpace != -1) { // Vérifie qu'il y a bien 2 espaces
+            double angle1 = input.substring(0, firstSpace).toFloat();
+            double angle2 = input.substring(firstSpace + 1, secondSpace).toFloat();
+            double angle3 = input.substring(secondSpace + 1).toFloat();
     
-        positions[0] = angle1;
-        positions[1] = angle2;
-        positions[2] = angle3;
+     
+            Serial.print("Reçu : ");
+            Serial.print(angle1);
+            Serial.print(", ");
     
-        setServoPositions(positions);
+            
+            Serial.print(angle2);
+            Serial.print(", ");
+            Serial.println(angle3);
     
+            positions[0] = angle1;
+            positions[1] = angle2;
+            positions[2] = angle3;
+    
+            setServoPositions(positions);
+        } else {
+            Serial.println("Erreur : format invalide !");
+        }
     }
+    
 }
 
 

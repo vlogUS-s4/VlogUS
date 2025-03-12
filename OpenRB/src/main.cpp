@@ -24,17 +24,9 @@ void setup() {
   Serial.begin(9600);  // Port USB (débogage)  while(!DEBUG_SERIAL); // On attend que la communication série pour les messages soit prête.
   
   deltabot.setup();
-
+// 
 }
 
 void loop() {
   deltabot.readAngleCommand();
 }
-
-  if (Serial.available() > 0) {
-
-    // Découpage de la ligne en trois parties
-    int firstSpace = input.indexOf(' ');
-    int secondSpace = input.indexOf(' ', firstSpace + 1);
-
-    if (firstSpace != -1 && secondSpace != -1) { // Vérifie qu'il y a bien 2 espaces

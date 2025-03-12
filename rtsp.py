@@ -130,7 +130,8 @@ try:
         print("Detected Faces:", faces)  # Each frame's detected faces
 
         RC.process(faces)
-        RC.printData()
+        if faces!=(0,0,0,0,0):
+            RC.printData()
 
 
 

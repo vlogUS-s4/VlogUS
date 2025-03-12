@@ -11,7 +11,7 @@
 #include <cstring>
 #include <sstream>
 
-#define SERIAL_PORT "/dev/cu.usbmodem1411201"
+#define SERIAL_PORT "/dev/ttyACM0"
 
 using namespace std;
 

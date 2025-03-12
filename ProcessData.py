@@ -47,10 +47,16 @@ class PID:
 
 class RobotController:
     def __init__(self):
+<<<<<<< HEAD
         self.pidX = PID(0.3, 0, 0, 20)
         self.pidY = PID(0.3, 0, 0, 50)
         self.pidZ = PID(0.3, 0, 0, 50)
         self.pidStepper = PID(0.3, 0, 0, 50)
+=======
+        self.pidX = PID(0.3, 0.0, 0, 20)
+        self.pidY = PID(0.3, 0.0, 0, 50)
+        self.pidZ = PID(0.7, 0.0, 0, 50)
+>>>>>>> 5b9a5544019e9c23ec43d8018971d4fee4d1c153
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0
@@ -60,16 +66,20 @@ class RobotController:
     def process(self, faces):
         self.outputX = (self.pidX.compute(faces[3], time.time())) / 100
         self.outputY = (self.pidY.compute(faces[0], time.time())) / 100
+<<<<<<< HEAD
         self.outputZ = (abs(self.pidZ.compute(faces[1], time.time())) + 14) / 100
         reachable = self.validatePosition(self.outputX, self.outputY, self.outputZ)
         if not reachable:
             self.outputStepper = (self.pidStepper.compute(faces[0], time.time()))/100
+=======
+        self.outputZ = (self.pidZ.compute(faces[1], time.time()) + 20) / 100
+>>>>>>> 5b9a5544019e9c23ec43d8018971d4fee4d1c153
 
 
     def printData(self):
                 
         with open("data.txt", "w") as file:
-            output_str = f"{self.outputX:.2f}\t{self.outputZ:.2f}\t{self.outputY:.2f}"
+            output_str = f"{self.outputX:.6f}\t{self.outputZ:.6f}\t{self.outputY:.6f}"
 
             file.write(str(output_str))
         file.close()
