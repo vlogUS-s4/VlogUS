@@ -8,9 +8,12 @@ Bienvenue sur le GitHub de VlogUS, le projet de la quatrième session de l'équi
  Une vidéo montrant les capacités de notre robot est diponible sur ce [lien](https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstley).
  Les étapes pour reproduire le projet sont sur le [Wiki](https://github.com/vlogUS-s4/VlogUS/wiki/VlogUS_Wiki)
 
+<!--
 <p align="center">
-<img src="https://github.com/vlogUS-s4/VlogUS/blob/main/Images/VlogUS_logo.png" alt="Description" width="300">
+  <img src="https://github.com/vlogUS-s4/VlogUS/blob/main/Images/VlogUS_logo.png" alt="Description" width="300">
 </p>
+-->
+
 
 Membres de l'équipe :
 
