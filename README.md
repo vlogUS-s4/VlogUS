@@ -9,12 +9,12 @@ Membres de l'équipe :
 
 [Marilie Bélanger] ()
 
-Lucas Bonenfant
+[Lucas Bonenfant](https://www.linkedin.com/in/lucas-bonenfant-0249281ab/)
 
 [Antoine Bouchard](https://www.linkedin.com/in/antoine-bouchard-354003300/)
 
-Charles McCabe
+[Charles McCabe]()
 
-Jean-Pascal Lafrance
+[Jean-Pascal Lafrance]()
 
-Elisabeth Simon
+[Elisabeth Simon](https://www.linkedin.com/in/elisabeth-simon01/)
