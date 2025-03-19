@@ -7,7 +7,7 @@ Bienvenue sur le GitHub de VlogUS, le projet de la quatrième session de l'équi
 
 Membres de l'équipe :
 
-[Marilie Bélanger] ()
+[Marilie Bélanger]()
 
 [Lucas Bonenfant](https://www.linkedin.com/in/lucas-bonenfant-0249281ab/)
 
