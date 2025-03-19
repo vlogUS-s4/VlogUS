@@ -3,4 +3,18 @@
 
 ## Présentation
 
-VlogUS est un appareil fait pour vlogger. Il supporte une caméra et est capable de suivre une personne dans la camera à l'aide d'un système delta pour bouger la camera dans l'espace 3D et des moteurs pour faire tourner la caméra dans la bonne orientation
+Bienvenue sur le GitHub de VlogUS, le projet de la quatrième session de l'équipe 7. L'objectif du projet était de concevoir un robot delta capable de suivre les visages à partir d'une capture en direct de la caméra d'un cellulaire.
+
+Membres de l'équipe :
+
+[Marilie Bélanger] ()
+
+Lucas Bonenfant
+
+[Antoine Bouchard](https://www.linkedin.com/in/antoine-bouchard-354003300/)
+
+Charles McCabe
+
+Jean-Pascal Lafrance
+
+Elisabeth Simon
