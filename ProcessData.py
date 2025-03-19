@@ -68,7 +68,7 @@ class RobotController:
         if not reachable:
             self.outputStepper = (self.pidStepper.compute(faces[0], time.time()))
             print(self.outputStepper)
-            stepper_thread = Thread(target=control_motor, args=(self.stepper, int(self.outputStepper), 0.01))
+            stepper_thread = Thread(target=control_motor, args=(self.stepper, -int(self.outputStepper), 0.01))
             stepper_thread.start()
             stepper_thread.join()
 
@@ -76,20 +76,21 @@ class RobotController:
 
     def printData(self):
                 
-        with open("data.txt", "w") as file:
+        with open(r'C:\Users\mccab\Desktop\siteVlogus\data.txt', "w") as file:
             output_str = f"{self.outputX:.6f}\t{self.outputZ:.6f}\t{self.outputY:.6f}"
-
             file.write(str(output_str))
+            file.flush()  # Force write to disk
         file.close()
 
     def validatePosition(self,x,y,z):
         reachable = False
+        K = 0.02
         if z >= 0.2 and z <=0.38:
-            max_x_y = (z**5+15741*z**4-8654.7*z**3+2355.5*z**2-317.38*z+17.017)
+            max_x_y = (z**5+15741*z**4-8654.7*z**3+2355.5*z**2-317.38*z+17.017)-K
             if x <= max_x_y or y <= max_x_y:
                 reachable = True
         elif z >= 0.14 and z <= 0.19:
-            max_x_y = (-31250*z**4+22060*z**3-5782.3*z**2+668.41*z-28.773)
+            max_x_y = (-31250*z**4+22060*z**3-5782.3*z**2+668.41*z-28.773)-K
             if x <= max_x_y or y <= max_x_y:
                 reachable = True
         return reachable
