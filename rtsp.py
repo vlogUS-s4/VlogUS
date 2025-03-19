@@ -57,13 +57,12 @@ def filter_close_faces(faces, image_width, image_height, threshold=10):
     return filtered_faces
 
 
-def process_frame(video_stream, face_cascade, profile_cascade):
+def process_frame(frame,face_cascade, profile_cascade):
     """Process a single frame and return detected faces"""
-    frame = video_stream.read()
     if frame is None:
         return []
 
-    h, w, _ = frame.shape  # Get image dimensions
+    h, w, _ = frame.shape # Get image dimensions
     gray = cv2.cvtColor(cv2.resize(frame, (0, 0), fx=0.5, fy=0.5), cv2.COLOR_BGR2GRAY)
     flipped_gray = cv2.flip(gray, 1)  # Flip for right-profile detection
 
@@ -113,32 +112,3 @@ def process_frame(video_stream, face_cascade, profile_cascade):
 
 
 
-# Usage Example:
-http_url = "http://192.168.137.122/live"
-video_stream = VideoStream(http_url)
-
-# Load the Haar cascades
-face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
-profile_cascade = cv2.CascadeClassifier("haarcascade_profileface.xml")
-
-RC = RobotController()
-
-
-try:
-    while True:
-        faces = process_frame(video_stream, face_cascade, profile_cascade)
-        print("Detected Faces:", faces)  # Each frame's detected faces
-        RC.process(faces)
-        if faces!=(0,0,0,0,0):
-            RC.printData()
-
-
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):  # Wait 50ms and check if 'q' is pressed
-            break
-
-except KeyboardInterrupt:
-    print("Interrupted by user")
-
-video_stream.stop()
-cv2.destroyAllWindows()
