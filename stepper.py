@@ -1,15 +1,16 @@
-from gpiozero import OutputDevice
+#from gpiozero import OutputDevice
 import time
 
 class StepperMotor:
     def __init__(self, dir_pin, step_pin, enable_pin=None):
-        self.dir_pin = OutputDevice(dir_pin)
+        '''self.dir_pin = OutputDevice(dir_pin)
         self.step_pin = OutputDevice(step_pin)
         self.enable_pin = OutputDevice(enable_pin) if enable_pin else None
+        '''
         self.position = 0
 
     def move(self, steps, step_delay):
-        if steps >= 0:
+        '''if steps >= 0:
             self.dir_pin.value = 1
         else:
             self.dir_pin.value = 0
@@ -22,7 +23,7 @@ class StepperMotor:
             if self.dir_pin.value == 1:
                 self.position += 1
             else:
-                self.position -= 1
+                self.position -= 1'''
 
     def get_position(self):
         return self.position
