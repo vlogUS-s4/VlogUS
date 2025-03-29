@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\face_tracking.dir/objects.a
+C:\mingw64\bin\ar.exe qc CMakeFiles\face_tracking.dir/objects.a @CMakeFiles\face_tracking.dir\objects1.rsp
+C:\mingw64\bin\c++.exe -shared -o lib\libface_tracking.dll -Wl,--out-implib,lib\libface_tracking.dll.a -Wl,--major-image-version,0,--minor-image-version,0 -Wl,--whole-archive CMakeFiles\face_tracking.dir/objects.a -Wl,--no-whole-archive @CMakeFiles\face_tracking.dir\linkLibs.rsp

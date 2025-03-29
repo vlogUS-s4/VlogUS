@@ -1,0 +1,7 @@
+C:/Users/mccab/Desktop/gitProjet/VlogUS/face_tracking/build/CMakeFiles/face_tracking.dir
+C:/Users/mccab/Desktop/gitProjet/VlogUS/face_tracking/build/CMakeFiles/edit_cache.dir
+C:/Users/mccab/Desktop/gitProjet/VlogUS/face_tracking/build/CMakeFiles/rebuild_cache.dir
+C:/Users/mccab/Desktop/gitProjet/VlogUS/face_tracking/build/CMakeFiles/list_install_components.dir
+C:/Users/mccab/Desktop/gitProjet/VlogUS/face_tracking/build/CMakeFiles/install.dir
+C:/Users/mccab/Desktop/gitProjet/VlogUS/face_tracking/build/CMakeFiles/install/local.dir
+C:/Users/mccab/Desktop/gitProjet/VlogUS/face_tracking/build/CMakeFiles/install/strip.dir
