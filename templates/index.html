@@ -173,7 +173,7 @@
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
                     const dataUrl = canvas.toDataURL('image/jpeg');
                     socket.emit('video_frame', dataUrl);
-                }, 20); // 30 FPS
+                }, 15); // 30 FPS
                 sendFrames();
             } catch (error) {
                 console.error('Error accessing camera:', error);

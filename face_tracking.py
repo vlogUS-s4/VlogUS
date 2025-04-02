@@ -66,5 +66,61 @@ def process_frame(frame, face_detector):
     return (round((avg_x / w) * 100, 2), round((avg_y / h) * 100, 2),
             round((dist_x / w) * 100, 2), round((dist_y / h) * 100, 2), 1)
 
-# Initialize YuNet face detector (download 'face_detection_yunet_2023mar.onnx' first)
-face_detector = cv2.FaceDetectorYN_create("face_detection_yunet_2023mar.onnx", "", (320, 320))
+
+def main():
+    # Initialiser la capture vidéo (0 pour la webcam par défaut)
+    
+    # Initialize YuNet face detector (download 'face_detection_yunet_2023mar.onnx' first)
+    face_detector = cv2.FaceDetectorYN_create("face_detection_yunet_2023mar.onnx", "", (320, 320))
+    cap = cv2.VideoCapture(0)
+    
+    if not cap.isOpened():
+        print("Erreur: Impossible d'ouvrir la caméra")
+        return
+
+    # Boucle principale
+    while True:
+        # Lire une frame de la caméra
+        ret, frame = cap.read()
+        if not ret:
+            print("Erreur: Impossible de lire la frame")
+            break
+
+        # Traiter la frame pour détecter les visages
+        result = process_frame(frame, face_detector)
+        cx_percent, cy_percent, w_percent, h_percent, orientation = result
+
+        # Convertir les pourcentages en pixels pour l'affichage
+        h, w = frame.shape[:2]
+        cx = int(cx_percent * w / 100)
+        cy = int(cy_percent * h / 100)
+        w_f = int(w_percent * w / 100)
+        h_f = int(h_percent * h / 100)
+
+        # Dessiner un rectangle autour du visage détecté
+        if cx_percent != 0 or cy_percent != 0:  # Vérifier si un visage est détecté
+            x1 = max(0, cx - w_f // 2)
+            y1 = max(0, cy - h_f // 2)
+            x2 = min(w, cx + w_f // 2)
+            y2 = min(h, cy + h_f // 2)
+            
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            
+            # Afficher les coordonnées en pourcentage
+            text = f"X: {cx_percent:.1f}%, Y: {cy_percent:.1f}%"
+            cv2.putText(frame, text, (x1, y1-10), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Afficher la frame
+        cv2.imshow('Face Detection', frame)
+
+        # Quitter avec la touche 'q'
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Libérer les ressources
+    cap.release()
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()

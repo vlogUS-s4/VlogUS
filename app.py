@@ -32,7 +32,7 @@ def handle_video_frame(data):
         frame_queue.put(frame, block=False)
         end_time = time.time()
         print(f"Frame decoding time: {1000*(end_time-start_time)} ms")
-    except queue.Full:
+    except frame_queue.Full:
         print("Unexpected queue issue (should not happen with maxsize=1)")
 
 def process_latest_frame():
@@ -54,8 +54,8 @@ def index():
 
 if __name__ == "__main__":
     # Start the processing thread
-    rtsp_thread = threading.Thread(target=process_latest_frame, daemon=True)
-    rtsp_thread.start()
+    processing_thread = threading.Thread(target=process_latest_frame, daemon=True)
+    processing_thread.start()
     # Run Flask with SSL
     socketio.run(app, host='0.0.0.0', port=5000, debug=True,
                  ssl_context=(r'C:\Users\mccab\Desktop\siteVlogus\cert.pem',
