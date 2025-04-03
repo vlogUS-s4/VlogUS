@@ -1,83 +1,121 @@
 #include "cinematiqueInverse.hpp"
 #include <iostream>
-#include <fcntl.h>
-#include <termios.h>
-#include <unistd.h>
-#include <cstring>
-#include <fstream>
-#include <string>
+#include <windows.h>
 #include <thread>
 #include <chrono>
-#include <sstream>  // Required for std::istringstream
-
+#include <stdexcept>
+#include <array>
+#include <numeric>
 
 int main()
 {
+    constexpr double DEG_TO_RAD = M_PI / 180.0;
+    constexpr int SHM_SIZE = 32; // 4 doubles = 32 bytes
+    constexpr std::chrono::milliseconds LOOP_DELAY(50);
 
-    coordonnees position;
+    // Moving average filter parameters
+    constexpr size_t FILTER_SIZE = 5; // Adjustable size of the moving average window
+    std::array<double, FILTER_SIZE> x_buffer = {0.0};
+    std::array<double, FILTER_SIZE> y_buffer = {0.0};
+    std::array<double, FILTER_SIZE> z_buffer = {0.0};
+    std::array<double, FILTER_SIZE> stepper_buffer = {0.0};
+    size_t buffer_index = 0;
+    bool buffer_full = false;
 
-
-    double x = 0, y = 0, z = 0;
-
-    // Angle de rotation de la caméra
     double angleCamera_deg = 0.0;
-    double angleCamera_rad = angleCamera_deg * M_PI / 180.0;
+    double angleCamera_rad = angleCamera_deg * DEG_TO_RAD;
+    parametres longueurs = {0.29, 0.122, 0.089, 0.0408};
+    limitesMoteurs limites = {280.0, 130.0};
+    coordonnees position;
+    double angle_stepper;
 
-    while(1) {
-        std::string filename = "../data.txt";
-
-        std::ifstream file(filename);
-        if (file.is_open())
-        {
-            std::string line;
-
-            if (std::getline(file, line))
-            {
-                // std::cout << "Read: " << line << std::endl;
-                istringstream iss(line);
-
-                iss >> x >> z >> y; // "Read:" est ignoré, et les trois nombres sont stockés
-
-                std::cout << "x = " << x << ", y = " << z << ", z = " << y << std::endl;
-            }
-        }
-        else
-        {
-            file.close();
-            //std::cerr << "Error opening file" << std::endl;
-        }
-
-        // Coordonnees de la position voulue
-        position.x = x;
-        position.y = y;
-        position.z = z;
-        bool atteignable = validerPosition(position);
-
-        printf("Atteignable: %d\n", atteignable);
-
-        // selon le 3D (en m)
-        parametres longueurs = {0.29, 0.122, 0.089, 0.0408};
-
-        // limites moteurs (en degres)
-        limitesMoteurs limites = {280.0, 130.0};
-
-        // Angles des moteurs pour atteindre la position voulue
-        retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites, angleCamera_rad);
-
-        // printf("----------------------------------------\n");
-        // printf("Theta1: %f\n", anglesMoteurs.angle.theta1);
-        // printf("Theta2: %f\n", anglesMoteurs.angle.theta2);
-        // printf("Theta3: %f\n", anglesMoteurs.angle.theta3);
-
-
-        if (!anglesMoteurs.reachable && atteignable)
-        {
-            // printf("envoi angle");
-            envoiAngles(anglesMoteurs.angle);
-
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    // Create shared memory
+    HANDLE hMapFile = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, SHM_SIZE, "CoordinatesSharedMemory");
+    if (hMapFile == NULL)
+    {
+        std::cerr << "Failed to create shared memory: " << GetLastError() << std::endl;
+        return 1;
     }
 
+    void *pBuf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHM_SIZE);
+    if (pBuf == NULL)
+    {
+        std::cerr << "Failed to map shared memory: " << GetLastError() << std::endl;
+        CloseHandle(hMapFile);
+        return 1;
+    }
+
+    std::cout << "Shared memory 'CoordinatesSharedMemory' created. Waiting for Python to write coordinates...\n";
+
+    while (true)
+    {
+        try
+        {
+            // Read raw coordinates from shared memory
+            double *coords = static_cast<double *>(pBuf);
+            double raw_x = coords[0];
+            double raw_z = coords[1];
+            double raw_y = coords[2];
+            double raw_stepper = coords[3];
+
+            if (raw_x != 0.0 || raw_z != 0.0 || raw_y != 0.0)
+            {
+                std::cout << "Raw coordinates - X: " << raw_x << "\tZ: " << raw_z << "\tY: " << raw_y << "\tStepper: " << raw_stepper << ::endl;
+
+                // Update circular buffers
+                x_buffer[buffer_index] = raw_x;
+                y_buffer[buffer_index] = raw_y;
+                z_buffer[buffer_index] = raw_z;
+                stepper_buffer[buffer_index] = raw_stepper;
+
+                // Move to next index, wrap around if needed
+                buffer_index = (buffer_index + 1) % FILTER_SIZE;
+                if (buffer_index == 0)
+                    buffer_full = true;
+
+                // Calculate moving average
+                size_t count = buffer_full ? FILTER_SIZE : buffer_index;
+                position.x = std::accumulate(x_buffer.begin(), x_buffer.begin() + count, 0.0) / count;
+                position.y = std::accumulate(y_buffer.begin(), y_buffer.begin() + count, 0.0) / count;
+                position.z = std::accumulate(z_buffer.begin(), z_buffer.begin() + count, 0.0) / count;
+                angle_stepper = std::accumulate(stepper_buffer.begin(), stepper_buffer.begin() + count, 0.0) / count;
+
+                std::cout << "Filtered coordinates - X: " << position.x << "\tZ: " << position.z << "\tY: " << position.y << "\tStepper: " << angle_stepper << std::endl;
+
+                bool atteignable = validerPosition(position);
+                std::cout << "Atteignable: " << atteignable << std::endl;
+
+                retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites, angleCamera_rad);
+
+                if (!anglesMoteurs.reachable && atteignable)
+                {
+                    if (envoiAngles(anglesMoteurs.angle, angle_stepper))
+                    {
+                        std::cerr << "Failed to send angles to serial port" << std::endl;
+                    }
+                    else
+                    {
+                        std::cout << "Angles sent: Theta1=" << anglesMoteurs.angle.theta1
+                                  << ", Theta2=" << anglesMoteurs.angle.theta2
+                                  << ", Theta3=" << anglesMoteurs.angle.theta3
+                                  << ", Stepper=" << angle_stepper << std::endl;
+                    }
+                }
+            }
+            else
+            {
+                std::cout << "Waiting for non-zero coordinates from Python...\n";
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error processing data: " << e.what() << std::endl;
+        }
+
+        std::this_thread::sleep_for(LOOP_DELAY);
+    }
+
+    UnmapViewOfFile(pBuf);
+    CloseHandle(hMapFile);
     return 0;
 }

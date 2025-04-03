@@ -2,6 +2,8 @@ import numpy
 import time
 from stepper import StepperMotor
 from threading import Thread
+from multiprocessing import shared_memory
+import struct
 
 class PID:
     def __init__(self, kp: float, ki: float, kd: float, setpoint: float = 0.0):
@@ -49,10 +51,13 @@ class PID:
 
 class RobotController:
     def __init__(self):
-        self.pidX = PID(0.3, 0, 0, 20)
-        self.pidY = PID(0.3, 0, 0, 50)
-        self.pidZ = PID(0.3, 0, 0, 50)
-        self.pidStepper = PID(0.3, 0, 0, 50)
+        """   self.pidX = PID(0.3, 0, 0, 20)
+        self.pidY = PID(0.32, 0, 0, 50)
+        self.pidZ = PID(0.32, 0, 0, 50) """
+        self.pidX = PID(0, 0, 0, 20)
+        self.pidY = PID(0, 0, 0, 50)
+        self.pidZ = PID(0, 0, 0, 50)
+        self.pidStepper = PID(1.5, 0, 0, 50)
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0
@@ -65,22 +70,22 @@ class RobotController:
         self.outputY = (self.pidY.compute(faces[0], time.time())) / 100
         self.outputZ = (self.pidZ.compute(faces[1], time.time()) + 20) / 100
         reachable = self.validatePosition(self.outputX, self.outputY, self.outputZ)
-        if not reachable:
-            self.outputStepper = (self.pidStepper.compute(faces[0], time.time()))
-            print(self.outputStepper)
-            stepper_thread = Thread(target=control_motor, args=(self.stepper, -int(self.outputStepper), 0.01))
-            stepper_thread.start()
-            stepper_thread.join()
+        #if not reachable:
+        self.outputStepper = (self.pidStepper.compute(faces[0], time.time()))
+        print(self.outputStepper)
+        stepper_thread = Thread(target=control_motor, args=(self.stepper, -int(self.outputStepper), 0.01))
+        stepper_thread.start()
+        stepper_thread.join()
 
 
 
-    def printData(self):
-                
-        with open(r'C:\Users\mccab\Desktop\siteVlogus\data.txt', "w") as file:
-            output_str = f"{self.outputX:.6f}\t{self.outputZ:.6f}\t{self.outputY:.6f}"
-            file.write(str(output_str))
-            file.flush()  # Force write to disk
-        file.close()
+    def printData(self):     
+        # Connect to existing shared memory
+        shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=False, size=32)
+        data = struct.pack('dddd', self.outputX, self.outputZ, self.outputY, self.outputStepper)
+        shm.buf[0:32] = data
+        #print("Wrote to shared memory - X:", self.outputX, "Z:", self.outputZ, "Y:", self.outputY, "S:", self.outputStepper)
+        shm.close()  # Close handle after writing
 
     def validatePosition(self,x,y,z):
         reachable = False

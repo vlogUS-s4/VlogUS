@@ -5,13 +5,11 @@
 #include <array>
 #include <stdio.h>
 #include <iostream>
-#include <fcntl.h>
-#include <termios.h>
-#include <unistd.h>
-#include <cstring>
 #include <sstream>
+#include <windows.h> // Windows API for serial communication
+#include <iomanip>
 
-#define SERIAL_PORT "/dev/ttyACM0"
+#define SERIAL_PORT "COM7" // Remains the same, Windows uses COM ports
 
 using namespace std;
 
@@ -192,37 +190,76 @@ bool validerPosition(coordonnees position)
     return reachable;
 }
 
-bool envoiAngles(angles angle)
+bool envoiAngles(angles angle, double angle_stepper)
 {
-
-    int serial_fd = open(SERIAL_PORT, O_RDWR | O_NOCTTY | O_NDELAY);
-    if (serial_fd == -1)
+    HANDLE hSerial = CreateFileA(SERIAL_PORT,
+                                 GENERIC_READ | GENERIC_WRITE,
+                                 0,
+                                 NULL,
+                                 OPEN_EXISTING,
+                                 FILE_ATTRIBUTE_NORMAL,
+                                 NULL);
+    if (hSerial == INVALID_HANDLE_VALUE)
     {
-        // cerr<< "Impossible d'ouvrir le port serie!" << endl;
-        return 1;
+        DWORD error = GetLastError();
+        printf("Erreur: Impossible d'ouvrir le port serie %s (Code: %lu)\n", SERIAL_PORT, error);
+        return true;
     }
 
-    struct termios options;
-    tcgetattr(serial_fd, &options);
-    cfsetispeed(&options, B9600);
-    cfsetospeed(&options, B9600);
-    options.c_cflag = CS8 | CLOCAL | CREAD;
-    options.c_iflag = IGNPAR;
-    options.c_oflag = 0;
-    options.c_lflag = 0;
-    tcflush(serial_fd, TCIFLUSH);
-    tcsetattr(serial_fd, TCSANOW, &options);
+    DCB dcbSerialParams = {0};
+    dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
+    if (!GetCommState(hSerial, &dcbSerialParams))
+    {
+        printf("Erreur: Impossible de recuperer l'etat du port\n");
+        CloseHandle(hSerial);
+        return true;
+    }
+
+    dcbSerialParams.BaudRate = CBR_9600;
+    dcbSerialParams.ByteSize = 8;
+    dcbSerialParams.StopBits = ONESTOPBIT;
+    dcbSerialParams.Parity = NOPARITY;
+    if (!SetCommState(hSerial, &dcbSerialParams))
+    {
+        printf("Erreur: Impossible de configurer le port\n");
+        CloseHandle(hSerial);
+        return true;
+    }
+
+    COMMTIMEOUTS timeouts = {0};
+    timeouts.ReadIntervalTimeout = 50;
+    timeouts.ReadTotalTimeoutConstant = 50;
+    timeouts.ReadTotalTimeoutMultiplier = 10;
+    timeouts.WriteTotalTimeoutConstant = 50;
+    timeouts.WriteTotalTimeoutMultiplier = 10;
+    if (!SetCommTimeouts(hSerial, &timeouts))
+    {
+        printf("Erreur: Impossible de configurer les timeouts\n");
+        CloseHandle(hSerial);
+        return true;
+    }
 
     std::ostringstream msg;
-    msg << angle.theta1 << " " << angle.theta2 << " " << angle.theta3 << "\n";
+    msg << std::fixed << std::setprecision(2)
+        << angle.theta1 << " "
+        << angle.theta2 << " "
+        << angle.theta3 << " "
+        << angle_stepper << "\n";
     std::string data = msg.str();
 
-    write(serial_fd, data.c_str(), data.length());
-    printf(data.c_str());
+    DWORD bytesWritten;
+    if (!WriteFile(hSerial, data.c_str(), data.length(), &bytesWritten, NULL))
+    {
+        DWORD error = GetLastError();
+        printf("Erreur: Echec de l'ecriture sur le port (Code: %lu, Bytes tentes: %zu, Bytes ecrits: %lu)\n",
+               error, data.length(), bytesWritten);
+        CloseHandle(hSerial);
+        return true;
+    }
 
-    close(serial_fd);
-
-    return 0;
+    printf("Envoyé: %s", data.c_str());
+    CloseHandle(hSerial);
+    return false;
 }
 
 #endif

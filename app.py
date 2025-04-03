@@ -31,7 +31,7 @@ def handle_video_frame(data):
             frame_queue.task_done()
         frame_queue.put(frame, block=False)
         end_time = time.time()
-        print(f"Frame decoding time: {1000*(end_time-start_time)} ms")
+        #print(f"Frame decoding time: {1000*(end_time-start_time)} ms")
     except frame_queue.Full:
         print("Unexpected queue issue (should not happen with maxsize=1)")
 
@@ -45,7 +45,7 @@ def process_latest_frame():
         if faces != (0, 0, 0, 0, 0):
             RC.printData()
         end_time = time.time()
-        print(f"Frame processing time: {1000*(end_time-start_time)} ms")
+        #print(f"Frame processing time: {1000*(end_time-start_time)} ms")
         frame_queue.task_done()  # Mark the frame as processed
 
 @app.route('/')
