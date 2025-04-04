@@ -62,7 +62,20 @@ class RobotController:
         self.outputY = 0
         self.outputZ = 0
         self.outputStepper = 0
-        self.stepper = StepperMotor(dir_pin = 16, step_pin = 18)
+        # Try to connect to existing shared memory; if it fails, create it
+        self.shm = None
+        try:
+            self.shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=False, size=32)
+            print("Connected to existing shared memory 'CoordinatesSharedMemory'")
+        except FileNotFoundError:
+            # If it doesn't exist, create it
+            try:
+                self.shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=True, size=32)
+                print("Created new shared memory 'CoordinatesSharedMemory'")
+            except FileExistsError:
+                # If creation fails due to race condition or stale memory, connect to it
+                self.shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=False, size=32)
+                print("Connected to existing shared memory after creation attempt failed")
 
 
     def process(self, faces):
@@ -72,20 +85,14 @@ class RobotController:
         reachable = self.validatePosition(self.outputX, self.outputY, self.outputZ)
         #if not reachable:
         self.outputStepper = (self.pidStepper.compute(faces[0], time.time()))
-        print(self.outputStepper)
-        stepper_thread = Thread(target=control_motor, args=(self.stepper, -int(self.outputStepper), 0.01))
-        stepper_thread.start()
-        stepper_thread.join()
 
 
 
     def printData(self):     
-        # Connect to existing shared memory
-        shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=False, size=32)
+        # Write to shared memory
         data = struct.pack('dddd', self.outputX, self.outputZ, self.outputY, self.outputStepper)
-        shm.buf[0:32] = data
+        self.shm.buf[0:32] = data
         #print("Wrote to shared memory - X:", self.outputX, "Z:", self.outputZ, "Y:", self.outputY, "S:", self.outputStepper)
-        shm.close()  # Close handle after writing
 
     def validatePosition(self,x,y,z):
         reachable = False

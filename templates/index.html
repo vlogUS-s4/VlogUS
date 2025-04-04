@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phone Camera Access</title>
+    <title>Phone Camera with OpenCV</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.js"></script>
     <style>
         body {
@@ -33,12 +33,51 @@
             position: relative;
         }
 
-        video {
+        video,
+        img {
             max-width: 100%;
             border: 1px solid #ddd;
             border-radius: 4px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .fullscreen-btn:hover {
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            /* Ensure it fills container on mobile */
+            height: 100%;
+            z-index: 9999;
+            background-color: black;
+            margin: 0;
+            padding: 0;
+        }
+
+        .fullscreen video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border: none;
         }
 
         .controls {
@@ -70,6 +109,11 @@
             border-radius: 5px;
             margin: 20px 0;
             text-align: left;
+        }
+
+        .status {
+            font-weight: bold;
+            margin-top: 10px;
         }
 
         .tabs {
@@ -109,6 +153,10 @@
             color: #f44336;
             margin-top: 10px;
         }
+
+        #video {
+            transform: rotateY(180deg);
+        }
     </style>
 </head>
 
@@ -123,129 +171,241 @@
 
         <div id="liveTab" class="tab-content active">
             <div class="info">
-                <p>Start camera to view the live feed.</p>
+                <p>Start camera for Vlogus to start tracking and recording.</p>
             </div>
 
             <div class="controls">
-                <button id="startCameraBtn" onclick="startCamera()">Start Camera</button>
-                <button id="stopCameraBtn" disabled>Stop Camera</button>
-                <button id="fullscreenBtn" onclick="toggleFullscreen()">Fullscreen</button>
+                <button id="startCameraBtn" onclick="startCamera()">Start Recording</button>
+                <button id="stopCameraBtn" disabled onclick="stopCamera()">Stop Recording</button>
             </div>
 
             <div class="video-container">
-                <video id="videoElement" autoplay playsinline></video>
-            </div>
+                <video id="videoElement" autoplay playsinline style="display: none;"></video>
+                <canvas id="canvasElement" style="display: none;"></canvas>
+                <div>
+                    <h3>Processed Feed:</h3>
+                    <div class="video-wrapper">
+                        <video id="video" autoplay playsinline></video>
+                        <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+                    </div>
+                </div>
 
-            <div id="statusMessage">Camera not started</div>
-            <div id="errorMessage"></div>
+                <div id="statusMessage">Camera not started</div>
+                <div id="errorMessage"></div>
+            </div>
         </div>
 
         <div id="instructionsTab" class="tab-content">
             <h2>How to Use</h2>
             <ol style="text-align: left;">
-                <li>Make sure your phone and computer are on the same WiFi network</li>
-                <li>Open this URL on your phone: <strong>http://{{ server_ip }}:{{ server_port }}</strong></li>
+                <li>Make sure your device and computer are on the same WiFi network</li>
+                <li>Open this URL on your device: <strong>https://{{ server_ip }}:5000</strong></li>
                 <li>Click "Start Camera" and allow camera access when prompted</li>
-                <li>The live video feed will appear above</li>
+                <li>The video will be recorded and saved when you stop</li>
             </ol>
 
             <h2>Troubleshooting</h2>
             <ul style="text-align: left;">
                 <li>If camera access is denied, check your browser settings</li>
-                <li>For better performance, use Chrome or Safari on your phone</li>
+                <li>For better performance, use Chrome or Safari</li>
+                <li>If the connection is slow, try reducing the frame rate</li>
             </ul>
         </div>
     </div>
 
     <script>
-        const socket = io.connect('https://' + window.location.host);
-        const videoElement = document.getElementById('videoElement');
+        const socket = io.connect('https://' + window.location.hostname + ':5000');
+        const video = document.getElementById('video');
+        const videoWrapper = video.parentElement;
+        const startBtn = document.getElementById('startCameraBtn');
+        const stopBtn = document.getElementById('stopCameraBtn');
+        const statusMessage = document.getElementById('statusMessage');
         let stream = null;
+        let animationFrameId = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let isFullscreen = false;
+
+        // Helper function to detect supported MIME type
+        function getSupportedMimeType() {
+            const types = [
+                'video/webm;codecs=vp9',
+                'video/webm;codecs=vp8',
+                'video/mp4;codecs=h264',
+                'video/webm'
+            ];
+            for (let type of types) {
+                if (MediaRecorder.isTypeSupported(type)) {
+                    return type;
+                }
+            }
+            return null;
+        }
 
         async function startCamera() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
+                        width: { ideal: 640, max: 1280 },
+                        height: { ideal: 480, max: 720 },
+                        facingMode: 'user'
                     },
-                    audio: false
+                    audio: true
                 });
-                videoElement.srcObject = stream;
-                videoElement.style.display = 'block'; // Ensure visibility
-                document.getElementById('startCameraBtn').disabled = true;
-                document.getElementById('stopCameraBtn').disabled = false;
-                document.getElementById('statusMessage').textContent = 'Camera started';
+
+                video.srcObject = stream;
+                statusMessage.textContent = "Camera started";
             } catch (error) {
                 console.error('Error accessing camera:', error);
-                document.getElementById('errorMessage').textContent = 'Could not access the camera. Ensure permissions are granted and using HTTPS.';
+                statusMessage.textContent = "Error starting camera";
+                document.getElementById('errorMessage').textContent = 'Could not start stream: ' + error.message;
+                return;
+            }
+
+            try {
+                if (typeof MediaRecorder === 'undefined' || !MediaRecorder) {
+                    throw new Error('MediaRecorder is not supported in this browser');
+                }
+
+                const mimeType = getSupportedMimeType();
+                if (mimeType) {
+                    mediaRecorder = new MediaRecorder(stream, { mimeType });
+                    console.log(`Using MIME type: ${mimeType}`);
+                } else {
+                    mediaRecorder = new MediaRecorder(stream);
+                    console.log('No supported MIME type found, using browser default');
+                }
+
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    saveRecording();
+                };
+
+                mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error:', event.error);
+                    statusMessage.textContent = "Recording failed";
+                    document.getElementById('errorMessage').textContent = event.error.message;
+                };
+
+                mediaRecorder.start(1000);
+                statusMessage.textContent = "Camera and recording started";
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                statusMessage.textContent = "Camera started, but recording unavailable";
+                document.getElementById('errorMessage').textContent = 'Recording failed: ' + error.message;
+            }
+
+            socket.emit('start_processing');
+            sendFrames();
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        }
+
+        async function stopCamera() {
+            try {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                    stream = null;
+                }
+
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+
+                socket.emit('stop_processing');
+
+                statusMessage.textContent = "Camera stopped, saving recording...";
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+
+                if (isFullscreen) {
+                    toggleFullscreen();
+                }
+            } catch (error) {
+                console.error('Error stopping camera:', error);
+                statusMessage.textContent = "Error stopping camera";
+                document.getElementById('errorMessage').textContent = error.message;
             }
         }
 
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                videoElement.srcObject = null;
-                videoElement.style.display = 'block'; // Keep visible but empty
-                document.getElementById('startCameraBtn').disabled = false;
-                document.getElementById('stopCameraBtn').disabled = true;
-                document.getElementById('statusMessage').textContent = 'Camera stopped';
+        function saveRecording() {
+            if (recordedChunks.length === 0) {
+                statusMessage.textContent = "Camera stopped, no recording available";
+                return;
             }
+
+            const mimeType = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : 'video/webm';
+            const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `recording_${new Date().toISOString()}.${extension}`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                statusMessage.textContent = "Camera stopped, recording saved";
+            }, 100);
+        }
+
+        function sendFrames() {
+            if (!stream) return;
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            socket.emit('video_frame', dataUrl);
+
+            animationFrameId = requestAnimationFrame(sendFrames);
         }
 
         function toggleFullscreen() {
-            // Target the video element directly instead of the container
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (videoElement.requestFullscreen) {
-                    videoElement.requestFullscreen();
-                } else if (videoElement.webkitRequestFullscreen) { // Safari, Chrome on iOS/Android
-                    videoElement.webkitRequestFullscreen();
-                } else if (videoElement.mozRequestFullScreen) { // Firefox
-                    videoElement.mozRequestFullScreen();
-                } else if (videoElement.msRequestFullscreen) { // IE/Edge
-                    videoElement.msRequestFullscreen();
-                } else if (videoElement.webkitEnterFullscreen) { // iOS Safari fallback
-                    videoElement.webkitEnterFullscreen();
-                }
+            if (!isFullscreen) {
+                videoWrapper.classList.add('fullscreen');
+                document.querySelector('.fullscreen-btn').textContent = '⛶';
+                isFullscreen = true;
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) { // Safari, Chrome on iOS/Android
-                    document.webkitExitFullscreen();
-                } else if (document.mozCancelFullScreen) { // Firefox
-                    document.mozCancelFullScreen();
-                } else if (document.msExitFullscreen) { // IE/Edge
-                    document.msExitFullscreen();
-                }
+                videoWrapper.classList.remove('fullscreen');
+                document.querySelector('.fullscreen-btn').textContent = '⛶';
+                isFullscreen = false;
             }
         }
 
         function openTab(tabName) {
             const tabs = document.getElementsByClassName('tab');
             const contents = document.getElementsByClassName('tab-content');
-            for (let i = 0; i < tabs.length; i++) {
-                tabs[i].classList.remove('active');
-                contents[i].classList.remove('active');
-            }
+
+            for (let tab of tabs) tab.classList.remove('active');
+            for (let content of contents) content.classList.remove('active');
+
+            event.currentTarget.classList.add('active');
             document.getElementById(tabName).classList.add('active');
-            document.querySelector(`.tab[onclick="openTab('${tabName}')"]`).classList.add('active');
         }
 
-        document.getElementById('stopCameraBtn').onclick = stopCamera;
-
-        // Optional: Listen for fullscreen change to update UI if needed
-        document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) {
-                document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
-            } else {
-                document.getElementById('fullscreenBtn').textContent = 'Exit Fullscreen';
-            }
-        });
-        document.addEventListener('webkitfullscreenchange', () => {
-            if (!document.webkitFullscreenElement) {
-                document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
-            } else {
-                document.getElementById('fullscreenBtn').textContent = 'Exit Fullscreen';
+        // Exit fullscreen on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                toggleFullscreen();
             }
         });
     </script>

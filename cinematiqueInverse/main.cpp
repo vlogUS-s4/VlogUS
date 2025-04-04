@@ -11,7 +11,7 @@ int main()
 {
     constexpr double DEG_TO_RAD = M_PI / 180.0;
     constexpr int SHM_SIZE = 32; // 4 doubles = 32 bytes
-    constexpr std::chrono::milliseconds LOOP_DELAY(50);
+    constexpr std::chrono::milliseconds LOOP_DELAY(1000);
 
     // Moving average filter parameters
     constexpr size_t FILTER_SIZE = 5; // Adjustable size of the moving average window
@@ -29,11 +29,11 @@ int main()
     coordonnees position;
     double angle_stepper;
 
-    // Create shared memory
-    HANDLE hMapFile = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, SHM_SIZE, "CoordinatesSharedMemory");
+    // Connect to existing shared memory
+    HANDLE hMapFile = OpenFileMappingA(FILE_MAP_ALL_ACCESS, FALSE, "CoordinatesSharedMemory");
     if (hMapFile == NULL)
     {
-        std::cerr << "Failed to create shared memory: " << GetLastError() << std::endl;
+        std::cerr << "Failed to open shared memory: " << GetLastError() << std::endl;
         return 1;
     }
 
@@ -44,8 +44,6 @@ int main()
         CloseHandle(hMapFile);
         return 1;
     }
-
-    std::cout << "Shared memory 'CoordinatesSharedMemory' created. Waiting for Python to write coordinates...\n";
 
     while (true)
     {
@@ -60,7 +58,6 @@ int main()
 
             if (raw_x != 0.0 || raw_z != 0.0 || raw_y != 0.0)
             {
-                std::cout << "Raw coordinates - X: " << raw_x << "\tZ: " << raw_z << "\tY: " << raw_y << "\tStepper: " << raw_stepper << ::endl;
 
                 // Update circular buffers
                 x_buffer[buffer_index] = raw_x;
@@ -80,10 +77,10 @@ int main()
                 position.z = std::accumulate(z_buffer.begin(), z_buffer.begin() + count, 0.0) / count;
                 angle_stepper = std::accumulate(stepper_buffer.begin(), stepper_buffer.begin() + count, 0.0) / count;
 
-                std::cout << "Filtered coordinates - X: " << position.x << "\tZ: " << position.z << "\tY: " << position.y << "\tStepper: " << angle_stepper << std::endl;
+                // std::cout << "Filtered coordinates - X: " << position.x << "\tZ: " << position.z << "\tY: " << position.y << "\tStepper: " << angle_stepper << std::endl;
 
                 bool atteignable = validerPosition(position);
-                std::cout << "Atteignable: " << atteignable << std::endl;
+                // std::cout << "Atteignable: " << atteignable << std::endl;
 
                 retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites, angleCamera_rad);
 
@@ -95,10 +92,10 @@ int main()
                     }
                     else
                     {
-                        std::cout << "Angles sent: Theta1=" << anglesMoteurs.angle.theta1
+                        /*std::cout << "Angles sent: Theta1=" << anglesMoteurs.angle.theta1
                                   << ", Theta2=" << anglesMoteurs.angle.theta2
                                   << ", Theta3=" << anglesMoteurs.angle.theta3
-                                  << ", Stepper=" << angle_stepper << std::endl;
+                                  << ", Stepper=" << angle_stepper << std::endl;*/
                     }
                 }
             }

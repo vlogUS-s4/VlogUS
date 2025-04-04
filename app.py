@@ -8,6 +8,7 @@ from face_tracking import process_frame
 import time
 import threading
 from queue import Queue
+import subprocess
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -33,7 +34,33 @@ def handle_video_frame(data):
         end_time = time.time()
         #print(f"Frame decoding time: {1000*(end_time-start_time)} ms")
     except frame_queue.Full:
-        print("Unexpected queue issue (should not happen with maxsize=1)")
+        print("Unexpected queue issue")
+
+@socketio.on('start_processing')
+def start_processing():
+    global exe_process
+    try:
+        # Replace with your actual .exe path
+        exe_process = subprocess.Popen([r'C:\Users\mccab\Desktop\gitProjet\VlogUS\cinematiqueInverse\build\MyProject.exe'])
+        print(f"Started EXE with PID: {exe_process.pid}")
+    except Exception as e:
+        print(f"Error starting EXE: {e}")
+
+@socketio.on('stop_processing')
+def stop_processing():
+    global exe_process
+    if exe_process:
+        try:
+            exe_process.terminate()
+            exe_process.wait(timeout=5)  # Wait up to 5 seconds for clean exit
+            print("EXE terminated successfully")
+        except subprocess.TimeoutExpired:
+            exe_process.kill()
+            print("EXE forcefully killed")
+        except Exception as e:
+            print(f"Error stopping EXE: {e}")
+        finally:
+            exe_process = None
 
 def process_latest_frame():
     while True:
