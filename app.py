@@ -9,6 +9,8 @@ import time
 import threading
 from queue import Queue
 import subprocess
+import os
+import signal
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -17,73 +19,110 @@ socketio = SocketIO(app)
 frame_queue = Queue(maxsize=1)  # Only store the latest frame
 face_detector = cv2.FaceDetectorYN_create("face_detection_yunet_2023mar.onnx", "", (320, 320))
 RC = RobotController()
+exe_process = None  # Global variable to track the subprocess
 
-@socketio.on('video_frame')
-def handle_video_frame(data):
-    start_time = time.time()
-    frame_data = base64.b64decode(data[22:])
-    np_frame = np.frombuffer(frame_data, dtype=np.uint8)
-    frame = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
-    # Always replace the queue contents with the latest frame
-    try:
-        # If queue is full, remove the old frame first
-        if frame_queue.full():
-            frame_queue.get_nowait()  # Discard the old frame
-            frame_queue.task_done()
-        frame_queue.put(frame, block=False)
-        end_time = time.time()
-        #print(f"Frame decoding time: {1000*(end_time-start_time)} ms")
-    except frame_queue.Full:
-        print("Unexpected queue issue")
+# Path to your executable (modify as needed)
+EXE_PATH = r'C:\Users\mccab\Desktop\gitProjet\VlogUS\cinematiqueInverse\build\MyProject.exe'
 
-@socketio.on('start_processing')
-def start_processing():
-    global exe_process
-    try:
-        # Replace with your actual .exe path
-        exe_process = subprocess.Popen([r'C:\Users\mccab\Desktop\gitProjet\VlogUS\cinematiqueInverse\build\MyProject.exe'])
-        print(f"Started EXE with PID: {exe_process.pid}")
-    except Exception as e:
-        print(f"Error starting EXE: {e}")
-
-@socketio.on('stop_processing')
-def stop_processing():
+def cleanup_exe_process():
+    """Helper function to safely terminate the .exe process"""
     global exe_process
     if exe_process:
         try:
+            # Try graceful termination (SIGTERM on Unix, CTRL_C_EVENT on Windows)
             exe_process.terminate()
-            exe_process.wait(timeout=5)  # Wait up to 5 seconds for clean exit
+            exe_process.wait(timeout=2)  # Wait 2 seconds for clean exit
             print("EXE terminated successfully")
         except subprocess.TimeoutExpired:
-            exe_process.kill()
-            print("EXE forcefully killed")
+            print("EXE not responding - killing forcefully")
+            exe_process.kill()  # Force kill if not responding
         except Exception as e:
             print(f"Error stopping EXE: {e}")
         finally:
             exe_process = None
 
+@socketio.on('video_frame')
+def handle_video_frame(data):
+    """Handle incoming video frames from the client"""
+    try:
+        frame_data = base64.b64decode(data[22:])
+        np_frame = np.frombuffer(frame_data, dtype=np.uint8)
+        frame = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
+        
+        # Update the queue with the latest frame
+        if frame_queue.full():
+            frame_queue.get_nowait()  # Discard old frame if queue is full
+        frame_queue.put(frame, block=False)
+    except Exception as e:
+        print(f"Frame processing error: {e}")
+
+@socketio.on('start_processing')
+def start_processing():
+    """Start the external .exe when client connects"""
+    global exe_process
+    try:
+        if exe_process is None:
+            # Start the .exe in a new process (detached from Flask)
+            exe_process = subprocess.Popen(
+                [EXE_PATH],
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP  # Windows-specific flag
+            )
+            print(f"Started EXE with PID: {exe_process.pid}")
+        else:
+            print("EXE is already running")
+    except Exception as e:
+        print(f"Error starting EXE: {e}")
+        socketio.emit('error', {'message': str(e)})
+
+@socketio.on('stop_processing')
+def stop_processing():
+    """Stop the .exe when client disconnects"""
+    cleanup_exe_process()
+
 def process_latest_frame():
+    """Background thread for frame processing"""
     while True:
-        # Get the latest frame (blocks until a frame is available)
-        frame = frame_queue.get()
-        start_time = time.time()
-        faces = process_frame(frame, face_detector)
-        RC.process(faces)
-        if faces != (0, 0, 0, 0, 0):
-            RC.printData()
-        end_time = time.time()
-        #print(f"Frame processing time: {1000*(end_time-start_time)} ms")
-        frame_queue.task_done()  # Mark the frame as processed
+        frame = frame_queue.get()  # Blocks until a frame is available
+        try:
+            faces = process_frame(frame, face_detector)
+            RC.process(faces)
+            if faces != (0, 0, 0, 0, 0):
+                RC.printData()
+        except Exception as e:
+            print(f"Error in frame processing: {e}")
+        finally:
+            frame_queue.task_done()
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+def handle_shutdown(signum, frame):
+    """Cleanup on server shutdown"""
+    print("\nShutting down gracefully...")
+    cleanup_exe_process()
+    os._exit(0)
+
 if __name__ == "__main__":
-    # Start the processing thread
-    processing_thread = threading.Thread(target=process_latest_frame, daemon=True)
+    # Register signal handlers for clean shutdown
+    signal.signal(signal.SIGINT, handle_shutdown)
+    signal.signal(signal.SIGTERM, handle_shutdown)
+
+    # Start frame processing thread
+    processing_thread = threading.Thread(
+        target=process_latest_frame,
+        daemon=True  # Thread will exit when main program does
+    )
     processing_thread.start()
-    # Run Flask with SSL
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True,
-                 ssl_context=(r'C:\Users\mccab\Desktop\siteVlogus\cert.pem',
-                              r'C:\Users\mccab\Desktop\siteVlogus\key.pem'))
+
+    # Start Flask with SSL
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=5000,
+        debug=True,
+        ssl_context=(
+            r'C:\Users\mccab\Desktop\siteVlogus\cert.pem',
+            r'C:\Users\mccab\Desktop\siteVlogus\key.pem'
+        )
+    )

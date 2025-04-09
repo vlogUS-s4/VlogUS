@@ -246,8 +246,8 @@
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        width: { ideal: 640, max: 1280 },
-                        height: { ideal: 480, max: 720 },
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
                         facingMode: 'user'
                     },
                     audio: true
@@ -375,6 +375,7 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             const dataUrl = canvas.toDataURL('image/jpeg');
             socket.emit('video_frame', dataUrl);
+            setTimeout(sendFrames, 1000 / 15); // 15 fps
 
             animationFrameId = requestAnimationFrame(sendFrames);
         }

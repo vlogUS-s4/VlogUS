@@ -48,6 +48,7 @@ public:
   void setServoPositions(double position[]);
   void setStepperPosition(double position);
   void detectServo();
+  void updateStepper();
 
 private:
   uint8_t servoIDs[3];

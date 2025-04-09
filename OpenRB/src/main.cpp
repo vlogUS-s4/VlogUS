@@ -9,24 +9,25 @@
 #include <delta.h>
 #include <Arduino.h>
 
-
 Delta deltabot;
 
 void readSerialCommand();
 
-
-void setup() {
+void setup()
+{
   // put your setup code here, to run once:
-  delay(2000);    // Délai additionnel pour avoir le temps de lire les messages sur la console.
+  delay(2000); // Délai additionnel pour avoir le temps de lire les messages sur la console.
   DEBUG_SERIAL.println("Starting position control ...");
-  
+
   // Use UART port of DYNAMIXEL Shield to debug.
-  Serial.begin(9600);  // Port USB (débogage)  while(!DEBUG_SERIAL); // On attend que la communication série pour les messages soit prête.
-  
+  Serial.begin(9600); // Port USB (débogage)  while(!DEBUG_SERIAL); // On attend que la communication série pour les messages soit prête.
+
   deltabot.setup();
-// 
+  //
 }
 
-void loop() {
+void loop()
+{
   deltabot.readAngleCommand();
+  deltabot.updateStepper();
 }

@@ -1,5 +1,5 @@
 #include <delta.h>
-
+#include <AccelStepper.h>
 #include <Dynamixel2Arduino.h>
 
 // This namespace is required to use Control table item names
@@ -13,6 +13,10 @@ const float DXL_PROTOCOL_VERSION = 2.0;
 #define DIRPIN 5
 #define STEPPIN 4
 #define step_delay 1 // Délai entre les impulsions de pas
+// Define motor interface type (DRIVER = STEP/DIR mode)
+#define MotorInterfaceType 1
+// Initialize stepper (STEP pin 3, DIR pin 2)
+AccelStepper stepper(MotorInterfaceType, STEPPIN, DIRPIN);
 
 void Delta::setup()
 {
@@ -39,8 +43,9 @@ void Delta::setup()
     DEBUG_SERIAL.println(dxl.getLastLibErrCode());
 
     detectServo();
-    pinMode(DIRPIN, OUTPUT);
-    pinMode(STEPPIN, OUTPUT);
+    // Configure motor settings
+    stepper.setMaxSpeed(1000);    // Max steps/sec (adjust for your motor)
+    stepper.setAcceleration(500); // Steps/sec² (smoother = lower value)
 }
 
 void Delta::configureServo(uint8_t dxlID)
@@ -137,13 +142,24 @@ void Delta::readAngleCommand()
             positions[2] = angle3;
 
             setServoPositions(positions);
-            setStepperPosition(angle_stepper);
+            stepper.moveTo(stepper.currentPosition() + angle_stepper);
         }
         else
         {
             Serial.println("Erreur : format invalide !");
         }
     }
+}
+
+void Delta::updateStepper()
+{
+    if (stepper.distanceToGo() == 0)
+    {
+        // Change direction when done
+        stepper.moveTo(-stepper.currentPosition());
+    }
+
+    stepper.run(); // Must be called repeatedly
 }
 
 void Delta::detectServo()
