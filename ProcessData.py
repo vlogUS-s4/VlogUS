@@ -1,6 +1,5 @@
 import numpy
 import time
-from stepper import StepperMotor
 from threading import Thread
 from multiprocessing import shared_memory
 import struct
@@ -55,10 +54,8 @@ class RobotController:
         self.pidX = PID(0.3, 0, 0, 20)
         self.pidY = PID(0.32, 0, 0, 50)
         self.pidZ = PID(0.32, 0, 0, 50)
-        #self.pidX = PID(0, 0, 0, 20)
-        #self.pidY = PID(0, 0, 0, 50)
-        #self.pidZ = PID(0, 0, 0, 50)
         self.pidStepper = PID(4.5, 0, 0, 50)
+        
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0

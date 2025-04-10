@@ -115,16 +115,6 @@ void Delta::readAngleCommand()
             double angle3 = input.substring(secondSpace + 1).toFloat();
             double angle_stepper = input.substring(thirdSpace + 1).toFloat();
 
-            // Serial.print("Reçu : ");
-            // Serial.print(angle1);
-            // Serial.print(", ");
-
-            // Serial.print(angle2);
-            // Serial.print(", ");
-            // Serial.println(angle3);
-            // Serial.print(", ");
-            // Serial.print(angle_stepper);
-
             positions[0] = angle1;
             positions[1] = angle2;
             positions[2] = angle3;

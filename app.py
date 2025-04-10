@@ -22,7 +22,7 @@ RC = RobotController()
 exe_process = None  # Global variable to track the subprocess
 
 # Path to your executable (modify as needed)
-EXE_PATH = r'C:\Users\mccab\Desktop\gitProjet\VlogUS\cinematiqueInverse\build\MyProject.exe'
+EXE_PATH = r'cinematiqueInverse\build\MyProject.exe'
 
 def cleanup_exe_process():
     """Helper function to safely terminate the .exe process"""
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         port=5000,
         debug=True,
         ssl_context=(
-            r'C:\Users\mccab\Desktop\siteVlogus\cert.pem',
-            r'C:\Users\mccab\Desktop\siteVlogus\key.pem'
+            r'cert.pem',
+            r'key.pem'
         )
     )

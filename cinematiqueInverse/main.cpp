@@ -82,7 +82,7 @@ int main()
                 bool atteignable = validerPosition(position);
                 // std::cout << "Atteignable: " << atteignable << std::endl;
 
-                retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites);
+                retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites, angleCamera_rad);
 
                 if (!anglesMoteurs.reachable && atteignable)
                 {
