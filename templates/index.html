@@ -222,35 +222,17 @@
         const statusMessage = document.getElementById('statusMessage');
         let stream = null;
         let animationFrameId = null;
-        let mediaRecorder = null;
-        let recordedChunks = [];
         let isFullscreen = false;
-
-        // Helper function to detect supported MIME type
-        function getSupportedMimeType() {
-            const types = [
-                'video/webm;codecs=vp9',
-                'video/webm;codecs=vp8',
-                'video/mp4;codecs=h264',
-                'video/webm'
-            ];
-            for (let type of types) {
-                if (MediaRecorder.isTypeSupported(type)) {
-                    return type;
-                }
-            }
-            return null;
-        }
 
         async function startCamera() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
-                        width: { ideal: 640 },
-                        height: { ideal: 480 },
+                        width: { ideal: 1080, max: 1280 },
+                        height: { ideal: 720, max: 720 },
                         facingMode: 'user'
                     },
-                    audio: true
+                    audio: false
                 });
 
                 video.srcObject = stream;
@@ -262,46 +244,6 @@
                 return;
             }
 
-            try {
-                if (typeof MediaRecorder === 'undefined' || !MediaRecorder) {
-                    throw new Error('MediaRecorder is not supported in this browser');
-                }
-
-                const mimeType = getSupportedMimeType();
-                if (mimeType) {
-                    mediaRecorder = new MediaRecorder(stream, { mimeType });
-                    console.log(`Using MIME type: ${mimeType}`);
-                } else {
-                    mediaRecorder = new MediaRecorder(stream);
-                    console.log('No supported MIME type found, using browser default');
-                }
-
-                recordedChunks = [];
-
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) {
-                        recordedChunks.push(event.data);
-                    }
-                };
-
-                mediaRecorder.onstop = () => {
-                    saveRecording();
-                };
-
-                mediaRecorder.onerror = (event) => {
-                    console.error('MediaRecorder error:', event.error);
-                    statusMessage.textContent = "Recording failed";
-                    document.getElementById('errorMessage').textContent = event.error.message;
-                };
-
-                mediaRecorder.start(1000);
-                statusMessage.textContent = "Camera and recording started";
-            } catch (error) {
-                console.error('Error starting recording:', error);
-                statusMessage.textContent = "Camera started, but recording unavailable";
-                document.getElementById('errorMessage').textContent = 'Recording failed: ' + error.message;
-            }
-
             socket.emit('start_processing');
             sendFrames();
 
@@ -311,24 +253,9 @@
 
         async function stopCamera() {
             try {
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                    mediaRecorder.stop();
-                }
-
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                    video.srcObject = null;
-                    stream = null;
-                }
-
-                if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
-                }
-
                 socket.emit('stop_processing');
 
-                statusMessage.textContent = "Camera stopped, saving recording...";
+                statusMessage.textContent = "Camera stopped, robot stopped";
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
 
@@ -342,40 +269,24 @@
             }
         }
 
-        function saveRecording() {
-            if (recordedChunks.length === 0) {
-                statusMessage.textContent = "Camera stopped, no recording available";
-                return;
-            }
+        let targetFPS = 15;
+        let frameInterval = 1000 / targetFPS;
+        let lastFrameTime = 0;
 
-            const mimeType = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : 'video/webm';
-            const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
-            const blob = new Blob(recordedChunks, { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `recording_${new Date().toISOString()}.${extension}`;
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                statusMessage.textContent = "Camera stopped, recording saved";
-            }, 100);
-        }
-
-        function sendFrames() {
+        function sendFrames(timestamp) {
             if (!stream) return;
 
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg');
-            socket.emit('video_frame', dataUrl);
-            setTimeout(sendFrames, 1000 / 15); // 15 fps
+            if (!lastFrameTime || timestamp - lastFrameTime >= frameInterval) {
+                lastFrameTime = timestamp;
+
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg');
+                socket.emit('video_frame', dataUrl);
+            }
 
             animationFrameId = requestAnimationFrame(sendFrames);
         }

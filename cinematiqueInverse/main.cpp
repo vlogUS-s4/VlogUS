@@ -11,7 +11,7 @@ int main()
 {
     constexpr double DEG_TO_RAD = M_PI / 180.0;
     constexpr int SHM_SIZE = 32; // 4 doubles = 32 bytes
-    constexpr std::chrono::milliseconds LOOP_DELAY(15);
+    constexpr std::chrono::milliseconds LOOP_DELAY(20);
 
     // Moving average filter parameters
     constexpr size_t FILTER_SIZE = 5; // Adjustable size of the moving average window
@@ -82,7 +82,7 @@ int main()
                 bool atteignable = validerPosition(position);
                 // std::cout << "Atteignable: " << atteignable << std::endl;
 
-                retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites, angleCamera_rad);
+                retourCinematiqueInverse anglesMoteurs = cinematiqueInverse(position, longueurs, limites);
 
                 if (!anglesMoteurs.reachable && atteignable)
                 {

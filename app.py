@@ -60,6 +60,7 @@ def handle_video_frame(data):
 def start_processing():
     """Start the external .exe when client connects"""
     global exe_process
+    RC.stopped_recording = False
     try:
         if exe_process is None:
             # Start the .exe in a new process (detached from Flask)
@@ -77,6 +78,8 @@ def start_processing():
 @socketio.on('stop_processing')
 def stop_processing():
     """Stop the .exe when client disconnects"""
+    RC.stopped_recording = True
+    time.sleep(3)
     cleanup_exe_process()
 
 def process_latest_frame():

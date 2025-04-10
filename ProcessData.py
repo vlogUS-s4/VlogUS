@@ -23,6 +23,7 @@ class PID:
         self.integral = 0.0
         self.last_time = None
 
+
     def compute(self, measured_value: float, current_time: float):
         """
         Calcule la sortie du PID.
@@ -51,19 +52,20 @@ class PID:
 
 class RobotController:
     def __init__(self):
-        """   self.pidX = PID(0.3, 0, 0, 20)
+        self.pidX = PID(0.3, 0, 0, 20)
         self.pidY = PID(0.32, 0, 0, 50)
-        self.pidZ = PID(0.32, 0, 0, 50) """
-        self.pidX = PID(0, 0, 0, 20)
-        self.pidY = PID(0, 0, 0, 50)
-        self.pidZ = PID(0, 0, 0, 50)
-        self.pidStepper = PID(1.5, 0, 0, 50)
+        self.pidZ = PID(0.32, 0, 0, 50)
+        #self.pidX = PID(0, 0, 0, 20)
+        #self.pidY = PID(0, 0, 0, 50)
+        #self.pidZ = PID(0, 0, 0, 50)
+        self.pidStepper = PID(4.5, 0, 0, 50)
         self.outputX = 0
         self.outputY = 0
         self.outputZ = 0
         self.outputStepper = 0
         # Try to connect to existing shared memory; if it fails, create it
         self.shm = None
+        self.stopped_recording = False
         try:
             self.shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=False, size=32)
             print("Connected to existing shared memory 'CoordinatesSharedMemory'")
@@ -90,8 +92,12 @@ class RobotController:
 
     def printData(self):     
         # Write to shared memory
-        data = struct.pack('dddd', self.outputX, self.outputZ, self.outputY, self.outputStepper)
-        self.shm.buf[0:32] = data
+        if not self.stopped_recording:
+            data = struct.pack('dddd', self.outputX, self.outputZ, self.outputY, self.outputStepper)
+            self.shm.buf[0:32] = data
+        else:
+            data = struct.pack('dddd', 0., 0.13, 0., 0.)
+            self.shm.buf[0:32] = data
         #print("Wrote to shared memory - X:", self.outputX, "Z:", self.outputZ, "Y:", self.outputY, "S:", self.outputStepper)
 
     def validatePosition(self,x,y,z):
