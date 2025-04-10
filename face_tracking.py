@@ -56,20 +56,20 @@ def process_frame(frame, face_detector):
         return (round((cx / w) * 100, 2), round((cy / h) * 100, 2),
                 round((w_f / w) * 100, 2), round((h_f / h) * 100, 2), orientation)
 
-    # Average two largest faces (if multiple detected)
-    filtered_faces.sort(key=lambda f: f[2] * f[3], reverse=True)  # Sort by area
-    x1, y1, _, _, _ = filtered_faces[0]
-    x2, y2, _, _, _ = filtered_faces[1] if len(filtered_faces) > 1 else filtered_faces[0]
-    avg_x, avg_y = (x1 + x2) / 2, (y1 + y2) / 2
-    dist_x, dist_y = abs(x1 - x2), abs(y1 - y2)
+    # If more than one face, calculate average of all faces
+    if len(filtered_faces) > 1:
+        # Calculate average center coordinates
+        avg_cx = sum(face[0] for face in filtered_faces) / len(filtered_faces)
+        avg_cy = sum(face[1] for face in filtered_faces) / len(filtered_faces)
+        
+        # Calculate average width and height
+        avg_w = sum(face[2] for face in filtered_faces) / len(filtered_faces)
+        avg_h = sum(face[3] for face in filtered_faces) / len(filtered_faces)
 
-    return (round((avg_x / w) * 100, 2), round((avg_y / h) * 100, 2),
-            round((dist_x / w) * 100, 2), round((dist_y / h) * 100, 2), 1)
-
+        return (round((avg_cx / w) * 100, 2), round((avg_cy / h) * 100, 2),
+                round((avg_w / w) * 100, 2), round((avg_h / h) * 100, 2), 1)
 
 def main():
-    # Initialiser la capture vidéo (0 pour la webcam par défaut)
-    
     # Initialize YuNet face detector (download 'face_detection_yunet_2023mar.onnx' first)
     face_detector = cv2.FaceDetectorYN_create("face_detection_yunet_2023mar.onnx", "", (320, 320))
     cap = cv2.VideoCapture(0)
@@ -78,27 +78,27 @@ def main():
         print("Erreur: Impossible d'ouvrir la caméra")
         return
 
-    # Boucle principale
+    # Main loop
     while True:
-        # Lire une frame de la caméra
+        # Read a frame from the camera
         ret, frame = cap.read()
         if not ret:
             print("Erreur: Impossible de lire la frame")
             break
 
-        # Traiter la frame pour détecter les visages
+        # Process the frame to detect faces
         result = process_frame(frame, face_detector)
         cx_percent, cy_percent, w_percent, h_percent, orientation = result
 
-        # Convertir les pourcentages en pixels pour l'affichage
+        # Convert percentages to pixels for display
         h, w = frame.shape[:2]
         cx = int(cx_percent * w / 100)
         cy = int(cy_percent * h / 100)
         w_f = int(w_percent * w / 100)
         h_f = int(h_percent * h / 100)
 
-        # Dessiner un rectangle autour du visage détecté
-        if cx_percent != 0 or cy_percent != 0:  # Vérifier si un visage est détecté
+        # Draw a rectangle around the detected face
+        if cx_percent != 0 or cy_percent != 0:  # Check if a face is detected
             x1 = max(0, cx - w_f // 2)
             y1 = max(0, cy - h_f // 2)
             x2 = min(w, cx + w_f // 2)
@@ -106,19 +106,19 @@ def main():
             
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             
-            # Afficher les coordonnées en pourcentage
+            # Display coordinates in percentage
             text = f"X: {cx_percent:.1f}%, Y: {cy_percent:.1f}%"
             cv2.putText(frame, text, (x1, y1-10), 
                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        # Afficher la frame
+        # Show the frame
         cv2.imshow('Face Detection', frame)
 
-        # Quitter avec la touche 'q'
+        # Quit with 'q' key
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # Libérer les ressources
+    # Release resources
     cap.release()
     cv2.destroyAllWindows()
 
