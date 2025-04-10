@@ -1,59 +1,62 @@
-#ifndef DELTA_H
-#define DELTA_H
-
+#include <delta.h>
 #include <Arduino.h>
 
-// Please modify it to suit your hardware.
-#if defined(ARDUINO_AVR_UNO) || defined(ARDUINO_AVR_MEGA2560) // When using DynamixelShield
-#include <SoftwareSerial.h>
-SoftwareSerial soft_serial(7, 8); // DYNAMIXELShield UART RX/TX
-#define DXL_SERIAL Serial
-#define DEBUG_SERIAL soft_serial
-const int DXL_DIR_PIN = 2;     // DYNAMIXEL Shield DIR PIN
-#elif defined(ARDUINO_SAM_DUE) // When using DynamixelShield
-#define DXL_SERIAL Serial
-#define DEBUG_SERIAL SerialUSB
-const int DXL_DIR_PIN = 2; // DYNAMIXEL Shield DIR PIN
-#elif defined(ARDUINO_SAM_ZERO) // When using DynamixelShield
-#define DXL_SERIAL Serial1
-#define DEBUG_SERIAL SerialUSB
-const int DXL_DIR_PIN = 2; // DYNAMIXEL Shield DIR PIN
-#elif defined(ARDUINO_OpenCM904) // When using official ROBOTIS board with DXL circuit.
-#define DXL_SERIAL Serial3       // OpenCM9.04 EXP Board's DXL port Serial. (Serial1 for the DXL port on the OpenCM 9.04 board)
-#define DEBUG_SERIAL Serial
-const int DXL_DIR_PIN = 22; // OpenCM9.04 EXP Board's DIR PIN. (28 for the DXL port on the OpenCM 9.04 board)
-#elif defined(ARDUINO_OpenCR) // When using official ROBOTIS board with DXL circuit.
-// For OpenCR, there is a DXL Power Enable pin, so you must initialize and control it.
-// Reference link : https://github.com/ROBOTIS-GIT/OpenCR/blob/master/arduino/opencr_arduino/opencr/libraries/DynamixelSDK/src/dynamixel_sdk/port_handler_arduino.cpp#L78
-#define DXL_SERIAL Serial3
-#define DEBUG_SERIAL Serial
-const int DXL_DIR_PIN = 84; // OpenCR Board's DIR PIN.
-#elif defined(ARDUINO_OpenRB) // When using OpenRB-150
-// OpenRB does not require the DIR control pin.
-#define DXL_SERIAL Serial1
-#define DEBUG_SERIAL Serial
-const int DXL_DIR_PIN = -1;
-#else // Other boards when using DynamixelShield
-#define DXL_SERIAL Serial1
-#define DEBUG_SERIAL Serial
-const int DXL_DIR_PIN = 2; // DYNAMIXEL Shield DIR PIN
-#endif
+Delta deltabot;
 
-class Delta
+void TC3_Handler()
 {
-public:
-  void configureServo(uint8_t dxlID);
-  void setup();
-  void readAngleCommand();
-  void setServoPositions(double position[]);
-  void setStepperPosition(double position);
-  void detectServo();
-  void updateStepper();
+  // Clear the interrupt flag
+  TC3->COUNT16.INTFLAG.bit.MC0 = 1;
+  // Call updateStepper directly in ISR
+  deltabot.updateStepper();
+}
 
-private:
-  uint8_t servoIDs[3];
-  double pos[3];
-  int stepperPosition;
-};
+void setupTimer()
+{
+  // Enable TC3 clock
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(TC3_GCLK_ID) | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_CLKEN;
+  while (GCLK->STATUS.bit.SYNCBUSY)
+    ;
 
-#endif // DELTA_H
+  // Disable TC3 before configuration
+  TC3->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY)
+    ;
+
+  // Configure TC3 for 50 kHz (20 µs period)
+  // SAMD21 at 48 MHz, prescaler 1, count to 960 = 48 MHz / 960 = 50 kHz
+  TC3->COUNT16.CTRLA.reg = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_PRESCALER_DIV1;
+  TC3->COUNT16.CC[0].reg = 959; // 48 MHz / 50 kHz - 1
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY)
+    ;
+
+  // Enable interrupt on match
+  TC3->COUNT16.INTENSET.bit.MC0 = 1;
+
+  // Enable TC3
+  TC3->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
+  while (TC3->COUNT16.STATUS.bit.SYNCBUSY)
+    ;
+
+  // Enable interrupt in NVIC
+  NVIC_EnableIRQ(TC3_IRQn);
+}
+
+void setup()
+{
+  delay(2000); // Delay to allow reading messages on the console
+  // DEBUG_SERIAL.begin(115200); // Debug serial at 115200 baud
+  while (!DEBUG_SERIAL)
+    ; // Wait for serial to be ready
+  // DEBUG_SERIAL.println("Starting position control with 50 kHz timer...");
+
+  Serial.begin(9600); // USB port for debugging
+
+  deltabot.setup();
+  setupTimer(); // Initialize the 50 kHz timer
+}
+
+void loop()
+{
+  deltabot.readAngleCommand();
+}

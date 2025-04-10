@@ -26,21 +26,21 @@ void Delta::setup()
 
     if (dxl.getLastLibErrCode())
     {
-        DEBUG_SERIAL.println("Could not init serial port!");
-        DEBUG_SERIAL.print("Last error code: ");
-        DEBUG_SERIAL.println(dxl.getLastLibErrCode());
+        // DEBUG_SERIAL.println("Could not init serial port!");
+        // DEBUG_SERIAL.print("Last error code: ");
+        // DEBUG_SERIAL.println(dxl.getLastLibErrCode());
     }
     // Set Port Protocol Version. This has to match with DYNAMIXEL protocol version.
     if (!dxl.setPortProtocolVersion(DXL_PROTOCOL_VERSION))
     {
-        DEBUG_SERIAL.println("Could not set protocol version!");
-        DEBUG_SERIAL.print("Last error code: ");
-        DEBUG_SERIAL.println(dxl.getLastLibErrCode());
+        // DEBUG_SERIAL.println("Could not set protocol version!");
+        // DEBUG_SERIAL.print("Last error code: ");
+        // DEBUG_SERIAL.println(dxl.getLastLibErrCode());
     }
 
-    DEBUG_SERIAL.println("Setup done.");
-    DEBUG_SERIAL.print("Last error code: ");
-    DEBUG_SERIAL.println(dxl.getLastLibErrCode());
+    // DEBUG_SERIAL.println("Setup done.");
+    // DEBUG_SERIAL.print("Last error code: ");
+    // DEBUG_SERIAL.println(dxl.getLastLibErrCode());
 
     detectServo();
     // Configure motor settings
@@ -55,9 +55,9 @@ void Delta::configureServo(uint8_t dxlID)
     bool ping = dxl.ping(dxlID);
     if (!ping)
     {
-        DEBUG_SERIAL.println("Could not ping motor!");
-        DEBUG_SERIAL.print("Last error code: ");
-        DEBUG_SERIAL.println(dxl.getLastLibErrCode());
+        // DEBUG_SERIAL.println("Could not ping motor!");
+        // DEBUG_SERIAL.print("Last error code: ");
+        // DEBUG_SERIAL.println(dxl.getLastLibErrCode());
 
         return;
     }
@@ -71,7 +71,7 @@ void Delta::configureServo(uint8_t dxlID)
 
     // Limit the maximum velocity in Position Control Mode. Use 0 for Max speed
     dxl.writeControlTableItem(PROFILE_VELOCITY, dxlID, SPEED);
-    Serial.println("Servos configurées");
+    // Serial.println("Servos configurées");
 }
 
 void Delta::setServoPositions(double position[])
@@ -91,18 +91,6 @@ void Delta::setServoPositions(double position[])
         }
         dxl.setGoalPosition(servoIDs[i], position[i], UNIT_DEGREE);
         f_present_position = 0.0;
-    }
-    i = 0;
-    while (i < 3)
-    {
-
-        f_present_position = dxl.getPresentPosition(servoIDs[i], UNIT_DEGREE);
-
-        if (abs(position[i] - f_present_position) < 8.0)
-        {
-            i++;
-            Serial.println("Objectif atteint");
-        }
     }
 }
 
@@ -127,15 +115,15 @@ void Delta::readAngleCommand()
             double angle3 = input.substring(secondSpace + 1).toFloat();
             double angle_stepper = input.substring(thirdSpace + 1).toFloat();
 
-            Serial.print("Reçu : ");
-            Serial.print(angle1);
-            Serial.print(", ");
+            // Serial.print("Reçu : ");
+            // Serial.print(angle1);
+            // Serial.print(", ");
 
-            Serial.print(angle2);
-            Serial.print(", ");
-            Serial.println(angle3);
-            Serial.print(", ");
-            Serial.print(angle_stepper);
+            // Serial.print(angle2);
+            // Serial.print(", ");
+            // Serial.println(angle3);
+            // Serial.print(", ");
+            // Serial.print(angle_stepper);
 
             positions[0] = angle1;
             positions[1] = angle2;
@@ -146,18 +134,15 @@ void Delta::readAngleCommand()
         }
         else
         {
-            Serial.println("Erreur : format invalide !");
+            // Serial.println("Erreur : format invalide !");
         }
     }
+    // Serial.print("POS:");
+    Serial.println(stepper.currentPosition());
 }
 
 void Delta::updateStepper()
 {
-    if (stepper.distanceToGo() == 0)
-    {
-        // Change direction when done
-        stepper.moveTo(-stepper.currentPosition());
-    }
 
     stepper.run(); // Must be called repeatedly
 }
@@ -169,8 +154,8 @@ void Delta::detectServo()
     { // Tester les ID de 0 à 253
         if (dxl.ping(id))
         {
-            DEBUG_SERIAL.print("Moteur détecté avec ID : ");
-            DEBUG_SERIAL.println(id);
+            // DEBUG_SERIAL.print("Moteur détecté avec ID : ");
+            // DEBUG_SERIAL.println(id);
             servoIDs[i] = id;
             i++;
             configureServo(id);
