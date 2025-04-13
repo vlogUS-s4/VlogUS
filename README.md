@@ -5,7 +5,7 @@
 
 Bienvenue sur le GitHub de VlogUS, le projet de la quatrième session de l'équipe 7.
  L'objectif du projet était de concevoir un robot delta capable de suivre les visages à partir d'une capture en direct de la caméra d'un cellulaire.
- Une vidéo montrant les capacités de notre robot est diponible sur ce [lien](https://www.youtube.com/watch?v=dQw4w9WgXcQ&ab_channel=RickAstley).
+ Une vidéo montrant les capacités de notre robot est diponible sur ce [lien](https://youtu.be/QGU_tHIV9F0).
  Les étapes pour reproduire le projet sont sur le [Wiki](https://github.com/vlogUS-s4/VlogUS/wiki/VlogUS_Wiki)
 
 <!--
