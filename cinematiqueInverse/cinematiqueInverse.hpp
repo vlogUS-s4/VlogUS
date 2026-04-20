@@ -9,7 +9,7 @@
 #include <windows.h> // Windows API for serial communication
 #include <iomanip>
 
-#define SERIAL_PORT "COM7" // Remains the same, Windows uses COM ports
+#define SERIAL_PORT "COM7"
 
 using namespace std;
 

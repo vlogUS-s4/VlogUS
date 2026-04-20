@@ -1,11 +1,10 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 import cv2
 import base64
 import numpy as np
 from ProcessData import RobotController
 from face_tracking import process_frame
-import time
 import threading
 from queue import Queue
 import subprocess
@@ -21,8 +20,19 @@ face_detector = cv2.FaceDetectorYN_create("face_detection_yunet_2023mar.onnx", "
 RC = RobotController()
 exe_process = None  # Global variable to track the subprocess
 
-# Path to your executable (modify as needed)
-EXE_PATH = r'cinematiqueInverse\build\MyProject.exe'
+EXE_PATH = os.getenv("VLOGUS_EXE_PATH", os.path.join("cinematiqueInverse", "build", "MyProject.exe"))
+SSL_CERT_PATH = os.getenv("VLOGUS_SSL_CERT", "cert.pem")
+SSL_KEY_PATH = os.getenv("VLOGUS_SSL_KEY", "key.pem")
+APP_HOST = os.getenv("VLOGUS_HOST", "0.0.0.0")
+APP_PORT = int(os.getenv("VLOGUS_PORT", "5000"))
+APP_DEBUG = os.getenv("VLOGUS_DEBUG", "0").lower() in ("1", "true", "yes")
+
+
+def get_ssl_context():
+    """Return SSL context tuple when cert files are available; otherwise run HTTP."""
+    if os.path.exists(SSL_CERT_PATH) and os.path.exists(SSL_KEY_PATH):
+        return (SSL_CERT_PATH, SSL_KEY_PATH)
+    return None
 
 def cleanup_exe_process():
     """Helper function to safely terminate the .exe process"""
@@ -45,9 +55,14 @@ def cleanup_exe_process():
 def handle_video_frame(data):
     """Handle incoming video frames from the client"""
     try:
-        frame_data = base64.b64decode(data[22:])
+        if not isinstance(data, str) or "," not in data:
+            return
+
+        frame_data = base64.b64decode(data.split(",", 1)[1])
         np_frame = np.frombuffer(frame_data, dtype=np.uint8)
         frame = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
+        if frame is None:
+            return
         
         # Update the queue with the latest frame
         if frame_queue.full():
@@ -63,10 +78,14 @@ def start_processing():
     RC.stopped_recording = False
     try:
         if exe_process is None:
+            if not os.path.exists(EXE_PATH):
+                raise FileNotFoundError(f"Executable not found: {EXE_PATH}")
+
             # Start the .exe in a new process (detached from Flask)
+            creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if hasattr(subprocess, "CREATE_NEW_PROCESS_GROUP") else 0
             exe_process = subprocess.Popen(
                 [EXE_PATH],
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP  # Windows-specific flag
+                creationflags=creationflags
             )
             print(f"Started EXE with PID: {exe_process.pid}")
         else:
@@ -79,7 +98,7 @@ def start_processing():
 def stop_processing():
     """Stop the .exe when client disconnects"""
     RC.stopped_recording = True
-    time.sleep(3)
+    RC.printData()
     cleanup_exe_process()
 
 def process_latest_frame():
@@ -98,13 +117,22 @@ def process_latest_frame():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    ssl_enabled = get_ssl_context() is not None
+    return render_template(
+        'index.html',
+        server_ip=request.host.split(":")[0],
+        protocol='https' if ssl_enabled else 'http',
+        server_port=APP_PORT,
+    )
 
 def handle_shutdown(signum, frame):
     """Cleanup on server shutdown"""
     print("\nShutting down gracefully...")
+    RC.stopped_recording = True
+    RC.printData()
     cleanup_exe_process()
-    os._exit(0)
+    RC.close()
+    raise SystemExit(0)
 
 if __name__ == "__main__":
     # Register signal handlers for clean shutdown
@@ -118,14 +146,14 @@ if __name__ == "__main__":
     )
     processing_thread.start()
 
-    # Start Flask with SSL
+    ssl_context = get_ssl_context()
+    if ssl_context is None:
+        print("SSL certificates not found. Starting server without TLS.")
+
     socketio.run(
         app,
-        host='0.0.0.0',
-        port=5000,
-        debug=True,
-        ssl_context=(
-            r'cert.pem',
-            r'key.pem'
-        )
+        host=APP_HOST,
+        port=APP_PORT,
+        debug=APP_DEBUG,
+        ssl_context=ssl_context,
     )

@@ -157,6 +157,10 @@
         #video {
             transform: rotateY(180deg);
         }
+
+        #frameCanvas {
+            display: none;
+        }
     </style>
 </head>
 
@@ -165,8 +169,8 @@
         <h1>Vlogus</h1>
 
         <div class="tabs">
-            <div class="tab active" onclick="openTab('liveTab')">Live View</div>
-            <div class="tab" onclick="openTab('instructionsTab')">Instructions</div>
+            <div class="tab active" onclick="openTab(event, 'liveTab')">Live View</div>
+            <div class="tab" onclick="openTab(event, 'instructionsTab')">Instructions</div>
         </div>
 
         <div id="liveTab" class="tab-content active">
@@ -190,6 +194,8 @@
                     </div>
                 </div>
 
+                <canvas id="frameCanvas"></canvas>
+
                 <div id="statusMessage">Camera not started</div>
                 <div id="errorMessage"></div>
             </div>
@@ -199,7 +205,7 @@
             <h2>How to Use</h2>
             <ol style="text-align: left;">
                 <li>Make sure your device and computer are on the same WiFi network</li>
-                <li>Open this URL on your device: <strong>https://{{ server_ip }}:5000</strong></li>
+                <li>Open this URL on your device: <strong>{{ protocol }}://{{ server_ip }}:{{ server_port }}</strong></li>
                 <li>Click "Start Camera" and allow camera access when prompted</li>
                 <li>The video will be recorded and saved when you stop</li>
             </ol>
@@ -214,9 +220,11 @@
     </div>
 
     <script>
-        const socket = io.connect('https://' + window.location.hostname + ':5000');
+        const socket = io.connect(window.location.origin);
         const video = document.getElementById('video');
         const videoWrapper = video.parentElement;
+        const frameCanvas = document.getElementById('frameCanvas');
+        const frameContext = frameCanvas.getContext('2d');
         const startBtn = document.getElementById('startCameraBtn');
         const stopBtn = document.getElementById('stopCameraBtn');
         const statusMessage = document.getElementById('statusMessage');
@@ -245,7 +253,7 @@
             }
 
             socket.emit('start_processing');
-            sendFrames();
+            animationFrameId = requestAnimationFrame(sendFrames);
 
             startBtn.disabled = true;
             stopBtn.disabled = false;
@@ -254,6 +262,19 @@
         async function stopCamera() {
             try {
                 socket.emit('stop_processing');
+
+                if (animationFrameId !== null) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+
+                if (stream) {
+                    stream.getTracks().forEach((track) => track.stop());
+                    stream = null;
+                }
+
+                video.srcObject = null;
+                lastFrameTime = 0;
 
                 statusMessage.textContent = "Camera stopped, robot stopped";
                 startBtn.disabled = false;
@@ -273,18 +294,19 @@
         let frameInterval = 1000 / targetFPS;
         let lastFrameTime = 0;
 
-        function sendFrames(timestamp) {
+        function sendFrames(timestamp = 0) {
             if (!stream) return;
 
             if (!lastFrameTime || timestamp - lastFrameTime >= frameInterval) {
                 lastFrameTime = timestamp;
 
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/jpeg');
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                    frameCanvas.width = video.videoWidth;
+                    frameCanvas.height = video.videoHeight;
+                    frameContext.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+                }
+
+                const dataUrl = frameCanvas.toDataURL('image/jpeg');
                 socket.emit('video_frame', dataUrl);
             }
 
@@ -303,7 +325,7 @@
             }
         }
 
-        function openTab(tabName) {
+        function openTab(event, tabName) {
             const tabs = document.getElementsByClassName('tab');
             const contents = document.getElementsByClassName('tab-content');
 

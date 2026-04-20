@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Runtime files
+*.log
+cert.pem
+key.pem
+
+# CMake / native builds
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+*.ninja
+*.obj
+*.o
+*.exe
+
+# PlatformIO
+OpenRB/.pio/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

@@ -62,6 +62,7 @@ class RobotController:
         self.outputStepper = 0
         # Try to connect to existing shared memory; if it fails, create it
         self.shm = None
+        self._owns_shm = False
         self.stopped_recording = False
         try:
             self.shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=False, size=32)
@@ -70,6 +71,7 @@ class RobotController:
             # If it doesn't exist, create it
             try:
                 self.shm = shared_memory.SharedMemory(name='CoordinatesSharedMemory', create=True, size=32)
+                self._owns_shm = True
                 print("Created new shared memory 'CoordinatesSharedMemory'")
             except FileExistsError:
                 # If creation fails due to race condition or stale memory, connect to it
@@ -78,17 +80,22 @@ class RobotController:
 
 
     def process(self, faces):
-        self.outputX = (self.pidX.compute(faces[3], time.time())) / 100
-        self.outputY = (self.pidY.compute(faces[0], time.time())) / 100
-        self.outputZ = (self.pidZ.compute(faces[1], time.time()) + 20) / 100
-        reachable = self.validatePosition(self.outputX, self.outputY, self.outputZ)
-        #if not reachable:
-        self.outputStepper = (self.pidStepper.compute(faces[0], time.time()))
+        current_time = time.time()
+        self.outputX = (self.pidX.compute(faces[3], current_time)) / 100
+        self.outputY = (self.pidY.compute(faces[0], current_time)) / 100
+        self.outputZ = (self.pidZ.compute(faces[1], current_time) + 20) / 100
+        if self.validatePosition(self.outputX, self.outputY, self.outputZ):
+            self.outputStepper = self.pidStepper.compute(faces[0], current_time)
+        else:
+            self.outputStepper = 0.0
 
 
 
     def printData(self):     
         # Write to shared memory
+        if self.shm is None:
+            return
+
         if not self.stopped_recording:
             data = struct.pack('dddd', self.outputX, self.outputZ, self.outputY, self.outputStepper)
             self.shm.buf[0:32] = data
@@ -96,6 +103,22 @@ class RobotController:
             data = struct.pack('dddd', 0., 0.13, 0., 0.)
             self.shm.buf[0:32] = data
         #print("Wrote to shared memory - X:", self.outputX, "Z:", self.outputZ, "Y:", self.outputY, "S:", self.outputStepper)
+
+    def close(self):
+        if self.shm is None:
+            return
+
+        try:
+            self.shm.close()
+            if self._owns_shm:
+                self.shm.unlink()
+        except FileNotFoundError:
+            pass
+        finally:
+            self.shm = None
+
+    def __del__(self):
+        self.close()
 
     def validatePosition(self,x,y,z):
         reachable = False
